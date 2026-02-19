@@ -24,13 +24,6 @@ Edite `routes/web.php`:
 $router->get('/minha-rota', [MeuController::class, 'metodo']);
 ```
 
-## Publicando no Packagist
-
-1.  Hospede este código no GitHub.
-2.  Crie uma conta no [Packagist.org](https://packagist.org/).
-3.  Submeta a URL do seu repositório GitHub.
-4.  Configure o Webhook para atualizações automáticas.
-
 ## Licença
 
 MIT
