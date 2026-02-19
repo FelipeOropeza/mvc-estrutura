@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+
+// Verifica se a pasta vendor existe (se o composer install foi rodado)
+if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+    echo "Erro: Rode 'composer install' primeiro para gerar o autoload.\n";
+    exit(1);
+}
+
+require __DIR__ . '/vendor/autoload.php';
+
+use Core\Console\Kernel;
+
+$console = new Kernel();
+$console->handle($argv);

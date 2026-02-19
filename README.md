@@ -30,6 +30,20 @@ composer start
 
 Acesse `http://localhost:8000`.
 
+## CLI (Interface de Linha de Comando)
+
+Este framework traz uma ferramenta CLI chamada **Forge** para ajudar a gerar arquivos rapidamente, assim como o `artisan` do Laravel.
+
+Na raiz do seu projeto, rode:
+
+```bash
+forge make:controller UsuarioController
+forge make:model Produto
+forge make:view produto/lista
+```
+
+*(Nota para usuários Mac/Linux: use `php forge [comando]` se o script não for executável).*
+
 ## Criando Rotas
 
 Edite `routes/web.php`:

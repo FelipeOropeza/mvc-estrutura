@@ -1,0 +1,8 @@
+<?php
+
+namespace App\Models;
+
+class {{name}}
+{
+    // Lógica com banco de dados aqui
+}
