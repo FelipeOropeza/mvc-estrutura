@@ -14,7 +14,7 @@ Um esqueleto simples e leve para estrutura MVC em PHP, pronto para usar com Comp
 Para criar um novo projeto usando este esqueleto, execute o seguinte comando no seu terminal:
 
 ```bash
-composer create-project felipe-etec/mvc-base nome-do-seu-projeto
+composer create-project felipe-code/mvc-base nome-do-seu-projeto
 ```
 
 Isso irá baixar a estrutura completa e instalar todas as dependências automaticamente.
