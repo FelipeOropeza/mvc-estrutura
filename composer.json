@@ -1,5 +1,5 @@
 {
-    "name": "felipe-etec/mvc-base",
+    "name": "felipe-code/mvc-base",
     "description": "A simple PHP MVC skeleton for learning and reuse.",
     "type": "project",
     "license": "MIT",
@@ -12,7 +12,7 @@
     "authors": [
         {
             "name": "Felipe",
-            "email": "student@etec.sp.gov.br"
+            "email": "felipe2006.co@gmail.com"
         }
     ],
     "keywords": ["php", "mvc", "skeleton", "framework", "router"],
