@@ -9,12 +9,26 @@ Um esqueleto simples e leve para estrutura MVC em PHP, pronto para usar com Comp
 - **public/**: Document root onde fica o `index.php`.
 - **routes/**: Definição das rotas.
 
-## Como Usar
+## Instalação Rápida
 
-1.  Clone este repositório.
-2.  Execute `composer install` para gerar o autoloader.
-3.  Configure seu servidor web (Apache/Nginx) para apontar para a pasta `public/`.
-4.  Acesse `http://localhost/seu-projeto/public/` (ou configure um VirtualHost).
+Para criar um novo projeto usando este esqueleto, execute o seguinte comando no seu terminal:
+
+```bash
+composer create-project felipe-etec/mvc-base nome-do-seu-projeto
+```
+
+Isso irá baixar a estrutura completa e instalar todas as dependências automaticamente.
+
+## Como Rodar Localmente
+
+Após instalar, entre na pasta e inicie o servidor embutido:
+
+```bash
+cd nome-do-seu-projeto
+composer start
+```
+
+Acesse `http://localhost:8000`.
 
 ## Criando Rotas
 
