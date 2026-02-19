@@ -15,5 +15,8 @@
             "email": "student@etec.sp.gov.br"
         }
     ],
+    "scripts": {
+        "start": "php -S localhost:8000 -t public"
+    },
     "require": {}
 }
