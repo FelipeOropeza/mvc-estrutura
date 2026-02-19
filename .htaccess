@@ -1,0 +1,24 @@
+RewriteEngine On
+RewriteBase /
+
+# Protect hidden files
+<Files .*>
+    Order Deny,Allow
+    Deny From All
+</Files>
+
+# Protect sensitive files
+<Files composer.json>
+    Order Deny,Allow
+    Deny From All
+</Files>
+<Files composer.lock>
+    Order Deny,Allow
+    Deny From All
+</Files>
+
+# Redirect everything to public/index.php
+RewriteCond %{THE_REQUEST} /public/([^\s?]*) [NC]
+RewriteRule ^ %1 [L,NE,R=302]
+
+RewriteRule ^((?!public/).*)$ public/$1 [L,NC]

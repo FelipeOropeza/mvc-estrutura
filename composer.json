@@ -1,0 +1,19 @@
+{
+    "name": "felipe-etec/mvc-base",
+    "description": "A simple PHP MVC skeleton for learning and reuse.",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Core\\": "core/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Felipe",
+            "email": "student@etec.sp.gov.br"
+        }
+    ],
+    "require": {}
+}
