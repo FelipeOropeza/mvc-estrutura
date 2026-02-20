@@ -13,15 +13,19 @@ class Setup
 
         $fp = fopen('php://stdin', 'r');
 
-        // Pergunta 1: Twig
-        echo "1) Você gostaria de usar o Twig como motor de templates pricialmente? [y/N]: ";
-        $inputTwig = strtolower(trim(stream_get_line($fp, 1024, PHP_EOL)));
+        // Pergunta 1: Motor de Templates
+        echo "1) Qual motor de templates você deseja instalar e utilizar como padrão?\n";
+        echo "   [1] PHP Nativo (Padrão, sem dependências extras)\n";
+        echo "   [2] Twig Engine (Sintaxe enxuta e poderosa)\n";
+        echo "   (Para suportar novos motores no futuro, adicione aqui!)\n";
+        echo "Escolha a opção [1/2, deixe vazio para 1]: ";
+        $engineChoice = trim(stream_get_line($fp, 1024, PHP_EOL));
 
-        if ($inputTwig === 'y' || $inputTwig === 'yes') {
-            self::installTwig();
+        if ($engineChoice === '2') {
+            self::setupEngineChoice('twig');
         }
         else {
-            echo "\nMantendo PHP puro como motor de templates.\n";
+            self::setupEngineChoice('php');
         }
 
         // Pergunta 2: Banco de Dados (.env)
@@ -44,62 +48,36 @@ class Setup
         echo "=============================================\n";
     }
 
-    private static function installTwig(): void
+    private static function setupEngineChoice(string $engine): void
     {
-        echo "\nInstalando e configurando o Twig...\n";
-
-        // Instala a biblioteca
-        passthru('composer require twig/twig');
-
-        // Altera o config para usar twig
         $configFile = __DIR__ . '/../config/app.php';
-        if (file_exists($configFile)) {
-            $content = file_get_contents($configFile);
-            $content = str_replace("'view_engine' => 'php'", "'view_engine' => 'twig'", $content);
-            file_put_contents($configFile, $content);
+        $viewsPath = rtrim(__DIR__ . '/../app/Views', '/');
+
+        if ($engine === 'twig') {
+            echo "\n⚙️  Instalando e configurando o Twig...\n";
+            // Instala a biblioteca
+            passthru('composer require twig/twig');
+
+            // Altera o config
+            if (file_exists($configFile)) {
+                $content = file_get_contents($configFile);
+                $content = preg_replace("/'view_engine'\s*=>\s*'[^']+'/", "'view_engine' => 'twig'", $content);
+                file_put_contents($configFile, $content);
+            }
+
+            // Exclui a view PHP para usar a home.twig pronta e bonitona
+            if (file_exists("$viewsPath/home.php")) {
+                unlink("$viewsPath/home.php");
+            }
+            echo "✅ Twig ativado como motor oficial de templates!\n";
         }
-
-        // Renomeia a view base de exemplo para .twig
-        $viewFile = __DIR__ . '/../app/Views/home.php';
-        $twigFile = __DIR__ . '/../app/Views/home.twig';
-        if (file_exists($viewFile)) {
-            // Um HTML simples em formato Twig
-            $twigContent = '<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title|default("MVC") }}</title>
-</head>
-<body>
-    <h1>{{ title }}</h1>
-    <p>Olá, {{ name }}! Bem-vindo(a) à sua estrutura MVC com Twig.</p>
-</body>
-</html>';
-            file_put_contents($twigFile, $twigContent);
-            unlink($viewFile); // apaga o php antigo
-        }
-
-        // Atualiza os templates do Forge
-        self::updateForgeTemplates();
-
-        echo "\n✅ Twig configurado e ativado como motor oficial de templates!\n";
-    }
-
-    private static function updateForgeTemplates(): void
-    {
-        $stubFile = __DIR__ . '/../core/Console/Templates/view.stub';
-        if (file_exists($stubFile)) {
-            $twigStub = '<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Sua View</title>
-</head>
-<body>
-    <h1>Nova View: {{ "{{ name }}" }}</h1>
-</body>
-</html>';
-            file_put_contents($stubFile, $twigStub);
+        else {
+            echo "\n⚙️  Ativando PHP nativo como motor de templates.\n";
+            // Exclui a view twig para manter o repositório limpo a favor do home.php
+            if (file_exists("$viewsPath/home.twig")) {
+                unlink("$viewsPath/home.twig");
+            }
+            echo "✅ Motor nativo ativado com sucesso!\n";
         }
     }
 
