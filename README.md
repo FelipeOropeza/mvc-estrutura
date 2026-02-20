@@ -12,17 +12,29 @@ Para mergulhar fundo e aprender a separar a lógica da sua aplicação de forma 
 
 ## Início Rápido (Instalação e Teste)
 
-Criar o projeto a partir do esqueleto:
+### Método 1: Via Composer (Recomendado)
+A forma mais fácil de criar a aplicação é rodar o `create-project`. Ele baixará a última versão, iniciará o **instalador interativo** e limpará os arquivos de instalação ao finalizar.
+
 ```bash
 composer create-project felipe-code/mvc-base nome-do-seu-projeto
 ```
 
-Iniciar o Servidor Local Embutido:
+### Método 2: Via Git Clone Manual
+Se preferir clonar o repositório, você pode engatilhar o instalador interativo logo em seguida com os comandos abaixo:
+
 ```bash
-cd nome-do-seu-projeto
+git clone https://github.com/FelipeOropeza/mvc-estrutura.git meu-app
+cd meu-app
+composer install
+composer run post-create-project-cmd
+```
+
+### Iniciando o Servidor Local:
+Uma vez que o projeto esteja instanciado, inicie o servidor interno de prateleira:
+```bash
 composer start
 ```
-Acesse `http://localhost:8000` na sua máquina.
+E acesse `http://localhost:8000` no seu navegador.
 
 ### Comandos Rápidos da CLI:
 ```bash

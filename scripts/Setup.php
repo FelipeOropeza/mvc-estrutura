@@ -152,14 +152,29 @@ class Setup
         $composerJson = __DIR__ . '/../composer.json';
         if (file_exists($composerJson)) {
             $data = json_decode(file_get_contents($composerJson), true);
+
+            // Remove trigger
             if (isset($data['scripts']['post-create-project-cmd'])) {
                 unset($data['scripts']['post-create-project-cmd']);
-
-                // Salva formatado limpo
-                $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                file_put_contents($composerJson, $json);
             }
+
+            // Remove o auto-load do nosso espaço instalador pra não ficar lixo pro user final
+            if (isset($data['autoload']['psr-4']['Scripts\\'])) {
+                unset($data['autoload']['psr-4']['Scripts\\']);
+            }
+
+            // Altera meta infos nativas pro user
+            $data['name'] = 'meu-projeto/app';
+            $data['description'] = 'Um projeto baseado no MVC-Base esqueleto.';
+
+            // Salva formatado limpo
+            $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            file_put_contents($composerJson, $json);
         }
+
+        // Rodando dump-autoload final pro composer reconhecer que a pasta Scripts não existe mais
+        echo "\n\033[90m⚙️  Recarregando autoloader para o novo caminho formatado...\033[0m\n";
+        passthru('composer dump-autoload -q');
 
         // E auto-deleta o script Setup! Magia 🪄
         @unlink(__FILE__);
