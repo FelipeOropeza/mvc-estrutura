@@ -1,0 +1,10 @@
+✨ feat: Adiciona validação DTO e moderniza estrutura do MVC
+
+- Adição dos Atributos de Validação PHP 8 (`Required`, `Email`, `MinLength` e `MaxLength`).
+- Criação e montagem do motor núcleo de validação (`Validator`) via Reflection API.
+- 🧹 cleanup: Remoção do lixo de classes de testes, arquivos e rotas.
+- Criação de Helpers Globais para chamadas HTTP contínuas (`request`, `response`, `view`, `old`, `errors`).
+- 📚 docs: Documentação principal separada para o novo script `docs/framework.md` e README reduzido e limpo.
+- 💄 style: Redesign 100% da Home Page inicial com Bootstrap 5 CDN contendo hero banner e visuais modernos.
+
+Refs #mvc-base-update

@@ -1,55 +1,33 @@
 # MVC Base em PHP Puro
 
-Um esqueleto simples e leve para estrutura MVC em PHP, pronto para usar com Composer.
+Um esqueleto simples e leve para estrutura MVC completa em PHP, pronto para usar com Composer, contendo: Router próprio, Request DTO validator, View Engine simplificada e utilitários da CLI (Forge).
 
-## Estrutura
+## Documentação
 
-- **app/**: Controllers, Models e Views da sua aplicação.
-- **core/**: O núcleo do framework (Router, Controller base, etc).
-- **public/**: Document root onde fica o `index.php`.
-- **routes/**: Definição das rotas.
+Para mergulhar fundo e aprender a separar a lógica da sua aplicação de forma profissional num MVC, construir modelos, usar o Validator baseado em PHP 8 Attributes e a CLI do Framework, consulte a documentação dedicada na pasta `docs/`:
 
-## Instalação Rápida
+=> [Ler a Documentação do Motor MVC](docs/framework.md)
 
-Para criar um novo projeto usando este esqueleto, execute o seguinte comando no seu terminal:
+---
 
+## Início Rápido (Instalação e Teste)
+
+Criar o projeto a partir do esqueleto:
 ```bash
 composer create-project felipe-code/mvc-base nome-do-seu-projeto
 ```
 
-Isso irá baixar a estrutura completa e instalar todas as dependências automaticamente.
-
-## Como Rodar Localmente
-
-Após instalar, entre na pasta e inicie o servidor embutido:
-
+Iniciar o Servidor Local Embutido:
 ```bash
 cd nome-do-seu-projeto
 composer start
 ```
+Acesse `http://localhost:8000` na sua máquina.
 
-Acesse `http://localhost:8000`.
-
-## CLI (Interface de Linha de Comando)
-
-Este framework traz uma ferramenta CLI chamada **Forge** para ajudar a gerar arquivos rapidamente, assim como o `artisan` do Laravel.
-
-Na raiz do seu projeto, rode:
-
+### Comandos Rápidos da CLI:
 ```bash
-forge make:controller UsuarioController
-forge make:model Produto
-forge make:view produto/lista
-```
-
-*(Nota para usuários Mac/Linux: use `php forge [comando]` se o script não for executável).*
-
-## Criando Rotas
-
-Edite `routes/web.php`:
-
-```php
-$router->get('/minha-rota', [MeuController::class, 'metodo']);
+php forge make:controller NomeController
+php forge make:model TabelaModel
 ```
 
 ## Licença

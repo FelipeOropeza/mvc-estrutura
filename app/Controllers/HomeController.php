@@ -13,6 +13,7 @@ class HomeController extends Controller
             'title' => 'Minha Estrutura MVC Simples'
         ];
 
-        $this->view('home', $data);
+        // Renderizando a view usando o novo helper (Estilo Leaf)
+        return view('home', $data);
     }
 }

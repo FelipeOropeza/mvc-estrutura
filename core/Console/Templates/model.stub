@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
-class {{name}}
+use Core\Database\Model;
+
+class {{name}} extends Model
 {
-    // Lógica com banco de dados aqui
+    // A tabela será deduzida automaticamente como nome da classe + s (ex: "Usuarios")
+    // Descomente a linha abaixo para forçar o nome da tabela no BD:
+    // protected $table = 'nome_da_minha_tabela';
 }
