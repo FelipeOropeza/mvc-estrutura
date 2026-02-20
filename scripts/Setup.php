@@ -6,20 +6,20 @@ class Setup
 {
     public static function postCreateProject(): void
     {
+        self::clearScreen();
         echo "\n";
-        echo "=============================================\n";
-        echo "Bem-vindo ao Forge MVC Base!\n";
-        echo "=============================================\n\n";
+        echo "\033[1;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n";
+        echo "   \033[1;37m✨  BEM-VINDO AO FORGE MVC BASE INITIALIZER  ✨\033[0m\n";
+        echo "\033[1;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n\n";
 
-        $fp = fopen('php://stdin', 'r');
-
-        // Pergunta 1: Motor de Templates
-        echo "1) Qual motor de templates você deseja instalar e utilizar como padrão?\n";
-        echo "   [1] PHP Nativo (Padrão, sem dependências extras)\n";
-        echo "   [2] Twig Engine (Sintaxe enxuta e poderosa)\n";
-        echo "   (Para suportar novos motores no futuro, adicione aqui!)\n";
-        echo "Escolha a opção [1/2, deixe vazio para 1]: ";
-        $engineChoice = trim(stream_get_line($fp, 1024, PHP_EOL));
+        $engineChoice = self::askConfig(
+            "Qual motor de templates você deseja utilizar no projeto?",
+        [
+            '1' => 'PHP Nativo (Mais rápido e sem dependências extras)',
+            '2' => 'Twig Engine (Sintaxe frontend enxuta, estilo Blade/Vue)'
+        ],
+            '1'
+        );
 
         if ($engineChoice === '2') {
             self::setupEngineChoice('twig');
@@ -28,24 +28,54 @@ class Setup
             self::setupEngineChoice('php');
         }
 
-        // Pergunta 2: Banco de Dados (.env)
-        echo "\n2) Você gostaria de usar a biblioteca vlucas/phpdotenv para criar e carregar variáveis de um arquivo .env? [Y/n]: ";
-        $inputEnv = strtolower(trim(stream_get_line($fp, 1024, PHP_EOL)));
+        $envChoice = self::askConfig(
+            "Deseja instalar suporte flexível para Banco de Dados (.env)?",
+        [
+            'y' => 'Sim, instale o pacote phpdotenv (Recomendado na web)',
+            'n' => 'Não, vou configurar direto pelo arquivo antigo PHP puro'
+        ],
+            'y'
+        );
 
-        // Padrão sim (entende Enter e 'y')
-        if ($inputEnv === '' || $inputEnv === 'y' || $inputEnv === 'yes') {
+        if (strtolower($envChoice) === 'y') {
             self::installDotenv();
         }
         else {
-            echo "\nIgnorando phpdotenv. As conexões de banco de dados usarão mysql em localhost fixo confugirado em config/database.php.\n";
+            echo "\n\033[33mℹ️  Ignorando phpdotenv. Conexões de DB usarão config local.\033[0m\n";
         }
 
         self::installDatabaseBase();
-
         self::cleanup();
 
-        echo "\nInstalação concluída! Digite 'forge' para ver os comandos disponíveis!\n";
-        echo "=============================================\n";
+        echo "\n\033[1;32m✅ Instalação arquitetônica concluída com sucesso!\033[0m\n";
+        echo "\033[0m   Para continuar, acesse e execute: \033[36mphp forge\033[0m\n";
+        echo "\033[1;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n\n";
+    }
+
+    private static function askConfig(string $question, array $options, string $defaultKey): string
+    {
+        echo "\033[32m?\033[0m \033[1m{$question}\033[0m\n";
+        foreach ($options as $key => $desc) {
+            $isDefault = ($key === $defaultKey) ? " \033[33m(padrão)\033[0m" : "";
+            echo "  \033[36m[{$key}]\033[0m {$desc}{$isDefault}\n";
+        }
+
+        echo "\n  \033[1;32m❯\033[0m ";
+        $fp = fopen('php://stdin', 'r');
+        $choice = trim(stream_get_line($fp, 1024, PHP_EOL));
+
+        if ($choice === '') {
+            $choice = $defaultKey;
+        }
+
+        echo "\n";
+        return $choice;
+    }
+
+    private static function clearScreen(): void
+    {
+        // Limpa a tela inteira do terminal formatando visualmente limpo
+        echo "\033[2J\033[;H";
     }
 
     private static function setupEngineChoice(string $engine): void
