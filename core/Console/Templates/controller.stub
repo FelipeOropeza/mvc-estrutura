@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-use Core\Controller;
+use Core\Http\Controller;
 
 class {{name}} extends Controller
 {

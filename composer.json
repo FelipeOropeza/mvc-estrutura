@@ -10,7 +10,7 @@
             "Scripts\\": "scripts/"
         },
         "files": [
-            "core/helpers.php"
+            "core/Support/helpers.php"
         ]
     },
     "authors": [

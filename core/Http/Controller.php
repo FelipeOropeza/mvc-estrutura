@@ -1,6 +1,6 @@
 <?php
 
-namespace Core;
+namespace Core\Http;
 
 use Core\View\PhpEngine;
 use Core\View\TwigEngine;

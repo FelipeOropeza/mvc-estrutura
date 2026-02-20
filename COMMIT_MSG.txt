@@ -1,0 +1,9 @@
+♻️ refactor: Reorganiza arquitetura central e namespaces do Core
+
+- 🚚 Mover classes soltas na raiz do `core/` para diretórios semânticos
+- Mover `Controller` para `Core\Http\Controller`
+- Mover `Router` para `Core\Routing\Router`
+- Mover arquivo auxiliar `helpers.php` para a nova pasta `Core/Support/` e atualizado o psr-4/files no `composer.json`
+- 🔧 chore: Atualização dos namespaces correspondentes no `index.php`, roteador, templates CLI stub e base de controllers.
+
+A organização interna da API agora emula a separação limpa de pacotes de roteamento e interações HTTP de grandes distribuições (Laravel/Symfony).
