@@ -33,6 +33,9 @@ class Kernel
             case 'make:view':
                 $this->makeView($args);
                 break;
+            case 'setup:engine':
+                $this->setupEngine($args);
+                break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
                 $this->showHelp();
@@ -48,7 +51,8 @@ class Kernel
         echo "Comandos disponíveis:\n";
         echo "  make:controller <Nome>   Cria um novo Controller\n";
         echo "  make:model <Nome>        Cria um novo Model\n";
-        echo "  make:view <Nome>         Cria uma nova View\n";
+        echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
+        echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
     }
 
     private function makeController(array $args): void
@@ -95,8 +99,16 @@ class Kernel
         }
 
         $name = $args[1];
-        if (!str_ends_with($name, '.php')) {
-            $name .= '.php';
+
+        // Pega do seu config/app.php o motor base atual ('php' ou 'twig')
+        $engine = $this->config['app']['view_engine'] ?? 'php';
+        $extension = $engine === 'twig' ? '.twig' : '.php';
+
+        // Anexa a extensão baseada no motor dinamicamente ao nome se não tem
+        if (!str_ends_with($name, $extension) && !str_ends_with($name, '.html')) {
+            // Remove se a pessoa digitou a outra sem querer
+            $name = str_replace(['.php', '.twig'], '', $name);
+            $name .= $extension;
         }
 
         $path = $this->config['paths']['views'] . '/' . $name;
@@ -108,6 +120,36 @@ class Kernel
 
         $content = $this->renderTemplate('view', ['{{name}}' => $name]);
         $this->createFile($path, $content, "View '$name'");
+    }
+
+    private function setupEngine(array $args): void
+    {
+        if (!isset($args[1]) || !in_array($args[1], ['php', 'twig'])) {
+            echo "Erro: Forneça o motor. Ex: setup:engine twig\n";
+            exit(1);
+        }
+
+        $engine = $args[1];
+        $configFile = realpath(__DIR__ . '/../../config/app.php');
+        $content = file_get_contents($configFile);
+
+        // Troca valor da chave no config/app.php
+        $content = preg_replace("/'view_engine'\s*=>\s*'[^']+'/", "'view_engine' => '$engine'", $content);
+        file_put_contents($configFile, $content);
+
+        // Limpa a tela exemplo incompatível
+        $viewsPath = rtrim($this->config['paths']['views'], '/');
+        if ($engine === 'twig') {
+            if (file_exists("$viewsPath/home.php"))
+                unlink("$viewsPath/home.php");
+            echo "✅ Motor da View comutado para TWIG.\n";
+            echo "   (Execute 'composer require twig/twig' no terminal se ainda não instalou!).\n";
+        }
+        else {
+            if (file_exists("$viewsPath/home.twig"))
+                unlink("$viewsPath/home.twig");
+            echo "✅ Motor da View comutado para nativo PHP.\n";
+        }
     }
 
     private function renderTemplate(string $templateName, array $replacements): string
