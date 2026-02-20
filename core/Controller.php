@@ -2,18 +2,31 @@
 
 namespace Core;
 
+use Core\View\PhpEngine;
+use Core\View\TwigEngine;
+use Core\View\EngineInterface;
+
 abstract class Controller
 {
-    protected function view(string $view, array $data = []): void
-    {
-        extract($data);
-        $viewPath = __DIR__ . "/../app/Views/{$view}.php";
+    private EngineInterface $engine;
 
-        if (file_exists($viewPath)) {
-            require $viewPath;
+    public function __construct()
+    {
+        $config = require __DIR__ . '/../config/app.php';
+
+        $viewPath = $config['paths']['views'];
+        $engineType = $config['app']['view_engine'] ?? 'php';
+
+        if ($engineType === 'twig') {
+            $this->engine = new TwigEngine($viewPath);
         }
         else {
-            echo "View {$view} not found!";
+            $this->engine = new PhpEngine($viewPath);
         }
+    }
+
+    protected function view(string $view, array $data = []): void
+    {
+        $this->engine->render($view, $data);
     }
 }

@@ -28,5 +28,7 @@ return [
      */
     'app' => [
         'name' => 'MVC Base Project',
+        // Motores suportados: 'php' ou 'twig'
+        'view_engine' => 'php',
     ]
 ];
