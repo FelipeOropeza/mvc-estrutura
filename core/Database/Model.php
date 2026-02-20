@@ -21,12 +21,45 @@ abstract class Model
         $this->db = Connection::getInstance();
 
         if ($this->table === null) {
-            // Se a tabela não for definida, assume o nome da classe em minúsculo (com "s" no final)
-            // Ex: "App\Models\Usuario" -> "usuarios"
             $classPath = explode('\\', get_class($this));
             $className = end($classPath);
-            $this->table = strtolower($className) . 's'; // Muito básico, idealmente seria um pluralizador.
+            $this->table = strtolower($className) . 's'; // Muito básico, idealmente seria pluralizador
         }
+    }
+
+    /**
+     * Valida os dados informados de acordo com os Atributos PHP (#[Required], etc) da Model.
+     * Funciona em formato Active Record, segurando e bloqueando a Request caso inviável.
+     * 
+     * @param array|null $data Array assoc de dados (usará $_POST/$_GET se null)
+     * @return array Array seguro de dados após passar pelas regras
+     */
+    public function validate(?array $data = null): array
+    {
+        // Se a pessoa não enviou o array pra validar, pegamos da Request global automaticamente
+        $inputData = $data ?? request()->all();
+
+        $validator = new \Core\Validation\Validator();
+        $isValid = $validator->validate($this, $inputData);
+
+        if (!$isValid) {
+            $errors = $validator->getErrors();
+
+            if (request()->wantsJson()) {
+                response()->json([
+                    'status' => 'error',
+                    'message' => 'Erro de Validação Atributiva',
+                    'errors' => $errors
+                ], 422); // Rejeita a Request (Unprocessable Content)
+            }
+            else {
+                $_SESSION['_flash_errors'] = $errors;
+                $_SESSION['_flash_old'] = $inputData;
+                response()->redirect(request()->referer());
+            }
+        }
+
+        return $validator->getValidatedData();
     }
 
     /**

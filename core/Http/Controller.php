@@ -12,7 +12,7 @@ abstract class Controller
 
     public function __construct()
     {
-        $config = require __DIR__ . '/../config/app.php';
+        $config = require __DIR__ . '/../../config/app.php';
 
         $viewPath = $config['paths']['views'];
         $engineType = $config['app']['view_engine'] ?? 'php';

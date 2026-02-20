@@ -37,7 +37,7 @@ if (!function_exists('view')) {
      */
     function view(string $viewName, array $data = [])
     {
-        $config = require __DIR__ . '/../config/app.php';
+        $config = require __DIR__ . '/../../config/app.php';
         $viewPath = $config['paths']['views'];
         $engineType = $config['app']['view_engine'] ?? 'php';
 
