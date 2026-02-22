@@ -3,12 +3,28 @@
 namespace App\Models;
 
 use Core\Database\Model;
+use Core\Attributes\Required;
+use Core\Attributes\Email;
+use Core\Attributes\MinLength;
 
 class User extends Model
 {
-    /**
-     * Opcional: Especifique o nome da tabela no banco
-     * Se não informar nada, ele entende que a tabela se chama "{NomeDoModel}s", ex: "users".
-     */
     protected $table = 'users';
+
+    // Propriedades publicas mapeando as colunas da tabela "users"
+    public ?int $id = null;
+    
+    #[Required]
+    public ?string $nome = null;
+
+    #[Required]
+    #[Email]
+    public ?string $email = null;
+
+    #[Required] 
+    #[MinLength(8)]
+    public ?string $password = null;    
+    
+    public ?string $created_at = null;
+    public ?string $updated_at = null;
 }

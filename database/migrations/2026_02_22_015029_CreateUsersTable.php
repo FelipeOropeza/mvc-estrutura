@@ -13,6 +13,8 @@ class CreateUsersTable
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('nome');
+            $table->string('email');
+            $table->string('password');
             $table->timestamps();
         });
     }

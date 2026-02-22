@@ -28,23 +28,9 @@ class Setup
             self::setupEngineChoice('php');
         }
 
-        $envChoice = self::askConfig(
-            "Deseja instalar suporte flexível para Banco de Dados (.env)?",
-        [
-            'y' => 'Sim, instale o pacote phpdotenv (Recomendado na web)',
-            'n' => 'Não, vou configurar direto pelo arquivo antigo PHP puro'
-        ],
-            'y'
-        );
+        // Agora o DB é obrigatório via .env, então criamos o arquivo siliciosamente
+        self::installDotenv();
 
-        if (strtolower($envChoice) === 'y') {
-            self::installDotenv();
-        }
-        else {
-            echo "\n\033[33mℹ️  Ignorando phpdotenv. Conexões de DB usarão config local.\033[0m\n";
-        }
-
-        self::installDatabaseBase();
         self::cleanup();
 
         echo "\n\033[1;32m✅ Instalação arquitetônica concluída com sucesso!\033[0m\n";
@@ -113,36 +99,13 @@ class Setup
 
     private static function installDotenv(): void
     {
-        echo "\n📦 Instalando 'vlucas/phpdotenv' suporte para banco de dados flexível...\n";
-        passthru('composer require vlucas/phpdotenv');
-
-        // Copia o .env.example e cria o definitivo
+        echo "\n📦 Gerando arquivo de configuração local (.env)...\n";
         $envExample = __DIR__ . '/../.env.example';
         $envFile = __DIR__ . '/../.env';
 
         if (file_exists($envExample) && !file_exists($envFile)) {
             copy($envExample, $envFile);
-            echo "\n✅ Arquivo '.env' gerado com sucesso! Lembre-se de configurar sua senha lá.\n";
-        }
-    }
-
-    private static function installDatabaseBase(): void
-    {
-        // Se phpdotenv instalou, precisa adicionar o código no index.php para carregar o .env
-        $indexPath = __DIR__ . '/../public/index.php';
-        if (file_exists($indexPath)) {
-            $index = file_get_contents($indexPath);
-
-            // Só insere se não inseriu antes
-            if (strpos($index, 'Dotenv\Dotenv::createImmutable') === false) {
-                $dotenvLoader = "\nif (class_exists('Dotenv\Dotenv') && file_exists(__DIR__ . '/../.env')) {
-    \$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-    \$dotenv->load();
-}\n";
-                // Injeta o loader do dotenv logo após o autoloader do composer
-                $index = str_replace("require_once __DIR__ . '/../vendor/autoload.php';", "require_once __DIR__ . '/../vendor/autoload.php';" . $dotenvLoader, $index);
-                file_put_contents($indexPath, $index);
-            }
+            echo "✅ Arquivo '.env' gerado com sucesso! Lembre-se de configurar sua senha lá.\n";
         }
     }
 
