@@ -4,6 +4,12 @@ use Core\Routing\Router;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Tenta carregar variáveis de ambiente
+if (class_exists(\Dotenv\Dotenv::class) && file_exists(__DIR__ . '/../.env')) {
+    $dotenv = \Dotenv\Dotenv::createUnsafeImmutable(__DIR__ . '/../');
+    $dotenv->safeLoad();
+}
+
 // Inicia a sessão para suportar Flash Data (Erros de Validação e Inputs antigos)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

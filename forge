@@ -9,6 +9,12 @@ if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
 
 require __DIR__ . '/vendor/autoload.php';
 
+// Carrega as variáveis de ambiente (.env) caso o Laravel Dotenv foi instalado
+if (class_exists(\Dotenv\Dotenv::class) && file_exists(__DIR__ . '/.env')) {
+    $dotenv = \Dotenv\Dotenv::createUnsafeImmutable(__DIR__);
+    $dotenv->safeLoad();
+}
+
 use Core\Console\Kernel;
 
 $console = new Kernel();

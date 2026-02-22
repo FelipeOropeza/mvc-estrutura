@@ -19,8 +19,8 @@ class Schema
         // Traduz as ordens do blueprint para mysql bruto
         $sql = $blueprint->toSql();
 
-        // Descomente na produção para rodar de verdade no PDO:
-        // Connection::getInstance()->exec($sql);
+        // Envia direto para a PDO!
+        Connection::getInstance()->exec($sql);
 
         // Vamos logar para checarmos o SQL gerado:
         echo "Gerando Tabela: {$table} \n";
@@ -34,8 +34,8 @@ class Schema
     {
         $sql = "DROP TABLE IF EXISTS `{$table}`;";
 
-        // Descomente:
-        // Connection::getInstance()->exec($sql);
+        // Executa limpeza:
+        Connection::getInstance()->exec($sql);
 
         echo "Excluindo: \n" . $sql . "\n";
     }
