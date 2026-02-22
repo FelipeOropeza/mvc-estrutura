@@ -1,8 +1,13 @@
 <?php
 
 use Core\Routing\Router;
+use Core\Exceptions\Handler;
 
 require_once __DIR__ . '/../vendor/autoload.php';
+
+// Registra o tratador global de exceções
+$exceptionHandler = new Handler();
+$exceptionHandler->register();
 
 // Tenta carregar variáveis de ambiente
 if (class_exists(\Dotenv\Dotenv::class) && file_exists(__DIR__ . '/../.env')) {

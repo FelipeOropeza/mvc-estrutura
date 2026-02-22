@@ -115,3 +115,34 @@ if (!function_exists('old')) {
         return $oldInputs[$field] ?? $default;
     }
 }
+
+if (!function_exists('env')) {
+    /**
+     * Recupera uma variável de ambiente ou retorna um valor padrão.
+     */
+    function env(string $key, $default = null)
+    {
+        $value = $_ENV[$key] ?? $_SERVER[$key] ?? null;
+
+        if ($value === null) {
+            return $default;
+        }
+
+        switch (strtolower($value)) {
+            case 'true':
+            case '(true)':
+                return true;
+            case 'false':
+            case '(false)':
+                return false;
+            case 'empty':
+            case '(empty)':
+                return '';
+            case 'null':
+            case '(null)':
+                return null;
+        }
+
+        return $value;
+    }
+}
