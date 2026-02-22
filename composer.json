@@ -2,6 +2,7 @@
     "name": "felipe-code/mvc-base",
     "description": "A simple PHP MVC skeleton for learning and reuse.",
     "type": "project",
+    "readme": "README.md",
     "license": "MIT",
     "autoload": {
         "psr-4": {
