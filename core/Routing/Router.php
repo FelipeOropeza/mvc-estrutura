@@ -16,9 +16,24 @@ class Router
         $this->register('POST', $uri, $action);
     }
 
+    public function put(string $uri, array |callable $action): void
+    {
+        $this->register('PUT', $uri, $action);
+    }
+
+    public function delete(string $uri, array |callable $action): void
+    {
+        $this->register('DELETE', $uri, $action);
+    }
+
     protected function register(string $method, string $uri, array |callable $action): void
     {
-        $this->routes[$method][$uri] = $action;
+        // Converte a URI que tem parâmetros como {id} para um padrão de Regex
+        $uriPattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<\1>[a-zA-Z0-9_-]+)', $uri);
+        // Escapa as barras e garante início e fim exatos
+        $uriPattern = '#^' . str_replace('/', '\/', $uriPattern) . '$#';
+
+        $this->routes[$method][$uriPattern] = $action;
     }
 
     public function dispatch(): void
@@ -37,21 +52,79 @@ class Router
         // Garante que a URI comece com '/' e não termine com '/' (exceto se for apenas '/')
         $uri = '/' . trim($uri, '/');
 
-        if (isset($this->routes[$method][$uri])) {
-            $action = $this->routes[$method][$uri];
+        // Procura se alguma rota registrada casa com a URL usando Regex
+        $matchedRoute = null;
+        $matchedAction = null;
+        $params = [];
 
-            if (is_callable($action)) {
-                call_user_func($action);
+        if (isset($this->routes[$method])) {
+            foreach ($this->routes[$method] as $pattern => $action) {
+                if (preg_match($pattern, $uri, $matches)) {
+                    $matchedRoute = $pattern;
+                    $matchedAction = $action;
+                    // Filtra apenas os parametros nomeados (removendo os index numéricos do preg_match)
+                    foreach ($matches as $key => $value) {
+                        if (is_string($key)) {
+                            $params[$key] = $value;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        if ($matchedAction) {
+            if (is_callable($matchedAction)) {
+                call_user_func_array($matchedAction, array_values($params));
                 return;
             }
 
-            if (is_array($action)) {
-                [$controller, $method] = $action;
-                // Instancia o controller e chama o método
-                // Nota: Em um framework real, usaria Dependency Injection aqui
-                $controllerInstance = new $controller();
-                if (method_exists($controllerInstance, $method)) {
-                    $controllerInstance->$method();
+            if (is_array($matchedAction)) {
+                [$controller, $methodName] = $matchedAction;
+
+                // --- INÍCIO DA INJEÇÃO DE DEPENDÊNCIA ---
+                // Verifica o construtor do Controller
+                $reflector = new \ReflectionClass($controller);
+
+                $constructorArgs = [];
+                if ($constructor = $reflector->getConstructor()) {
+                    foreach ($constructor->getParameters() as $param) {
+                        $paramType = $param->getType();
+                        // Se o construtor pedir uma classe, instanciamos ela pra ele (Dependency Injection)
+                        if ($paramType && !$paramType->isBuiltin()) {
+                            $className = $paramType->getName();
+                            $constructorArgs[] = new $className();
+                        }
+                        else {
+                            $constructorArgs[] = null; // Falta de DI avançada baseada em Request
+                        }
+                    }
+                }
+
+                $controllerInstance = $reflector->newInstanceArgs($constructorArgs);
+
+                if (method_exists($controllerInstance, $methodName)) {
+                    // Prepara os argumentos do método ($id, etc) na ordem que o controller pediu
+                    $methodReflector = new \ReflectionMethod($controllerInstance, $methodName);
+                    $methodArgs = [];
+
+                    foreach ($methodReflector->getParameters() as $param) {
+                        $paramName = $param->getName();
+                        // Se a URL passou o parâmetro (ex: {id}), usamos ele
+                        if (array_key_exists($paramName, $params)) {
+                            $methodArgs[] = $params[$paramName];
+                        }
+                        // Se o método pedir uma Request global
+                        else if ($param->getType() && $param->getType()->getName() === \Core\Http\Request::class) {
+                            $methodArgs[] = request();
+                        }
+                        else {
+                            $methodArgs[] = null;
+                        }
+                    }
+
+                    // Tcharan! Chama o controlador com tudo que ele precisa!
+                    $methodReflector->invokeArgs($controllerInstance, $methodArgs);
                     return;
                 }
             }

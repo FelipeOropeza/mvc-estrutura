@@ -2,25 +2,13 @@
 
 namespace App\Models;
 
-class User
+use Core\Database\Model;
+
+class User extends Model
 {
     /**
-     * Exemplo de modelo padrão do motor MVC.
-     * Na vida real isso pode estender um Core\Model que lida com PDO DB.
-     *
-     * @var string
+     * Opcional: Especifique o nome da tabela no banco
+     * Se não informar nada, ele entende que a tabela se chama "{NomeDoModel}s", ex: "users".
      */
-    protected string $table = 'users';
-
-    public function create(array $data)
-    {
-        // ... implementação de INSERT via PDO
-        return true;
-    }
-
-    public function find(int $id)
-    {
-        // ... implementação de SELECT via PDO
-        return [];
-    }
+    protected $table = 'users';
 }
