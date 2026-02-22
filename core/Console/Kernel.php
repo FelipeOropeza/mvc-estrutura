@@ -24,6 +24,12 @@ class Kernel
         $command = $args[0];
 
         switch ($command) {
+            case 'make:migration':
+                $this->makeMigration($args);
+                break;
+            case 'migrate':
+                $this->runMigrations($args);
+                break;
             case 'make:controller':
                 $this->makeController($args);
                 break;
@@ -52,7 +58,123 @@ class Kernel
         echo "  make:controller <Nome>   Cria um novo Controller\n";
         echo "  make:model <Nome>        Cria um novo Model\n";
         echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
+        echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados. Ex: CreateUsersTable\n";
+        echo "  migrate                  Gera o Banco de Dados ausente (se possível) e roda as Migrations\n";
         echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
+    }
+
+    private function makeMigration(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome da classe. Ex: make:migration CreateUsersTable\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        $dir = $this->config['paths']['migrations'] ?? __DIR__ . '/../../database/migrations';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        // Gera o prefixo UNIX pra manter a ordem (Estilo Laravel: 2023_01_01_102030_CreateUsersTable.php)
+        $fileName = date('Y_m_d_His') . '_' . $name . '.php';
+        $path = $dir . '/' . $fileName;
+
+        // Tenta descobrir o nome da tabela (ex: "users" vindo de "CreateUsersTable")
+        $tableName = 'tabela_nova';
+        if (preg_match('/Create(.*)Table/i', $name, $matches)) {
+            $tableName = strtolower($matches[1]);
+        }
+
+        $content = $this->renderTemplate('migration', [
+            '{{name}}' => $name,
+            '{{tableName}}' => $tableName
+        ]);
+
+        $this->createFile($path, $content, "Migration '$name'");
+    }
+
+    private function runMigrations(array $args): void
+    {
+        echo "Iniciando as Migrations...\n========================\n";
+
+        $dbConfigPath = __DIR__ . '/../../config/database.php';
+        if (!file_exists($dbConfigPath)) {
+            echo "Erro: Arquivo config/database.php não encontrado.\n";
+            exit(1);
+        }
+        $dbConfigMaster = require $dbConfigPath;
+
+        $driver = getenv('DB_CONNECTION') ?: $dbConfigMaster['default'];
+        $dbConfig = $dbConfigMaster['connections'][$driver];
+
+        // 1. Opcionalmente: Cria o Banco se não existir (MySQL puro suporta criar)
+        try {
+            if ($driver === 'mysql') {
+                $dsnOutDB = "mysql:host={$dbConfig['host']};port={$dbConfig['port']}";
+                $pdoCheck = new \PDO($dsnOutDB, $dbConfig['username'], $dbConfig['password']);
+                $pdoCheck->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+                $dbName = $dbConfig['database'];
+                // Verifica e cria
+                $pdoCheck->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET {$dbConfig['charset']} COLLATE utf8mb4_unicode_ci;");
+            }
+        }
+        catch (\PDOException $e) {
+            echo "Erro Crítico de Conexão: O servidor não atendeu com essas credenciais.\n";
+            echo "Detalhe: " . $e->getMessage() . "\n";
+            exit(1);
+        }
+
+        // Agora sim a gente roda as criações na Schema
+        // As Facades `Schema` la dentro chamarão o Connection real.
+
+        $dir = $this->config['paths']['migrations'] ?? __DIR__ . '/../../database/migrations';
+
+        if (!is_dir($dir)) {
+            echo "Tudo certo! Mas você ainda não possui a pasta de Migrations.\n";
+            exit(1);
+        }
+
+        $files = scandir($dir);
+        $ranAny = false;
+
+        // Obs: Em um framework complexo haveria uma tabela `migrations` no BD pra não rodar duas vezes o que já rodou.
+        // Como isso é a base em desenvolvimento, vamos rodar tudo.
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $path = $dir . '/' . $file;
+
+            // Pega o nome da classe removendo timestamp e extensão
+            // Ex: "2023_01_01_102030_CreateUsersTable.php" vira "CreateUsersTable"
+            $className = preg_replace('/^[0-9_]+_([a-zA-Z0-9]+)\.php$/', '$1', $file);
+
+            if ($className && is_file($path)) {
+                require_once $path;
+
+                if (class_exists($className)) {
+                    $migration = new $className();
+
+                    if (method_exists($migration, 'up')) {
+                        echo "\n[INFO] Rodando: $className\n";
+                        $migration->up();
+                        $ranAny = true;
+                    }
+                }
+            }
+        }
+
+        if (!$ranAny) {
+            echo "Nenhuma Migration encontrada para rodar.\n";
+        }
+        else {
+            echo "\n✅ Todas as migrations concluídas com sucesso.\n";
+        }
     }
 
     private function makeController(array $args): void

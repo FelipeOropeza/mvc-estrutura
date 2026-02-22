@@ -13,6 +13,7 @@ return [
         'controllers' => __DIR__ . '/../app/Controllers',
         'models' => __DIR__ . '/../app/Models',
         'views' => __DIR__ . '/../app/Views',
+        'migrations' => __DIR__ . '/../database/migrations',
 
         // Caminho físico dos templates usados pelos comandos do Console
         'templates' => __DIR__ . '/../core/Console/Templates',
