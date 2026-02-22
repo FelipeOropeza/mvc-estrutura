@@ -36,6 +36,11 @@ class Blueprint
         return $this->addColumn($name, 'INT');
     }
 
+    public function decimal(string $name, int $precision = 8, int $scale = 2): ColumnDefinition
+    {
+        return $this->addColumn($name, 'DECIMAL', "$precision,$scale");
+    }
+
     public function boolean(string $name): ColumnDefinition
     {
         return $this->addColumn($name, 'TINYINT', 1);
@@ -52,7 +57,7 @@ class Blueprint
         $this->timestamp('updated_at')->nullable();
     }
 
-    protected function addColumn(string $name, string $type, ?int $length = null): ColumnDefinition
+    protected function addColumn(string $name, string $type, ?string $length = null): ColumnDefinition
     {
         $column = new ColumnDefinition($name, $type, $length);
         $this->columns[] = $column;

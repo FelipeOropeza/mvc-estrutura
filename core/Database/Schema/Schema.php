@@ -18,6 +18,8 @@ class Schema
 
         // Traduz as ordens do blueprint para mysql bruto
         $sql = $blueprint->toSql();
+        // Altera silenciosamente para não explodir em refazer a mesma tabela durante desenvolvimento bruto atual
+        $sql = str_replace("CREATE TABLE `{$table}`", "CREATE TABLE IF NOT EXISTS `{$table}`", $sql);
 
         // Envia direto para a PDO!
         Connection::getInstance()->exec($sql);

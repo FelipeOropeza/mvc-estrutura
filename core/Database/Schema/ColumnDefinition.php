@@ -6,7 +6,7 @@ class ColumnDefinition
 {
     protected string $name;
     protected string $type;
-    protected ?int $length;
+    protected ?string $length;
 
     // Properties for chainable methods
     protected bool $isNullable = false;
@@ -16,7 +16,7 @@ class ColumnDefinition
     protected bool $isUnique = false;
     protected $defaultValue = null;
 
-    public function __construct(string $name, string $type, ?int $length = null)
+    public function __construct(string $name, string $type, ?string $length = null)
     {
         $this->name = $name;
         $this->type = $type;
@@ -67,7 +67,7 @@ class ColumnDefinition
     {
         $sql = "`{$this->name}` {$this->type}";
 
-        if ($this->length !== null && !in_array($this->type, ['TEXT', 'DATE', 'DATETIME', 'TIMESTAMP'])) {
+        if ($this->length !== null && !in_array($this->type, ['TEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'INT', 'TINYINT'])) {
             $sql .= "({$this->length})";
         }
 
