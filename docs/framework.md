@@ -30,6 +30,7 @@ Para utilizar no terminal do seu projeto:
 php forge make:controller UsuarioController
 php forge make:model Produto
 php forge make:view produto/lista
+php forge make:middleware AuthMiddleware
 ```
 
 ### Setup Inteligente de Views
@@ -45,7 +46,39 @@ php forge setup:engine php
 
 ---
 
-## 3. Validação Atributiva Dinâmica (PHP 8)
+## 3. Middlewares e Proteção de Rotas
+
+O framework possui um sistema robusto de Middlewares (filtros de requisição) com suporte à injeção de atributos e bloqueios. Após criar seu Middleware com o comando no CLI (ex: `php forge make:middleware AuthMiddleware`), você o associa as rotas para protege-las:
+
+```php
+// routes/web.php
+use App\Middleware\AuthMiddleware;
+
+$router->get('/painel-secreto', [AdminController::class, 'index'])
+       ->middleware(AuthMiddleware::class);
+```
+
+Dentro do Middleware, você pode barrar a continuação:
+
+```php
+public function handle(Request $request, Closure $next)
+{
+    if (!$request->get('token')) {
+        // Interrompe e não deixa chegar ao Controller!
+        response()->json(['erro' => 'Não autorizado'], 401); 
+        exit;
+    }
+
+    // Injeta dados processados pra Rota usar depois
+    $request->attributes['usuarioLogado'] = 'Felipe Admin'; 
+
+    return $next($request);
+}
+```
+
+---
+
+## 4. Validação Atributiva Dinâmica (PHP 8)
 
 Uma das maiores inovações deste micro-framework é o seu sistema de Validação embutido diretamente nas **Models**, sem precisar escrever centenas de IFs.
 
