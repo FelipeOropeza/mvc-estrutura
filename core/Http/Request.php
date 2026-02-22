@@ -5,6 +5,12 @@ namespace Core\Http;
 class Request
 {
     /**
+     * Parâmetros customizados injetados por middlewares ou rotas 
+     * Ex: Usuário autenticado, variáveis específicas...
+     */
+    public array $attributes = [];
+
+    /**
      * Retorna um dado do corpo da requisição (POST) ou da URL (GET).
      */
     public function get(string $key, $default = null)
