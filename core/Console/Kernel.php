@@ -39,6 +39,9 @@ class Kernel
             case 'make:view':
                 $this->makeView($args);
                 break;
+            case 'make:middleware':
+                $this->makeMiddleware($args);
+                break;
             case 'setup:engine':
                 $this->setupEngine($args);
                 break;
@@ -59,6 +62,7 @@ class Kernel
         echo "  make:model <Nome>        Cria um novo Model\n";
         echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
         echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados. Ex: CreateUsersTable\n";
+        echo "  make:middleware <Nome>   Cria um novo Middleware de validação. Ex: AuthMiddleware\n";
         echo "  migrate                  Gera o Banco de Dados ausente (se possível) e roda as Migrations\n";
         echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
     }
@@ -242,6 +246,29 @@ class Kernel
 
         $content = $this->renderTemplate('view', ['{{name}}' => $name]);
         $this->createFile($path, $content, "View '$name'");
+    }
+
+    private function makeMiddleware(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome. Ex: make:middleware AuthMiddleware\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        if (!str_ends_with($name, 'Middleware')) {
+            $name .= 'Middleware';
+        }
+
+        $dir = $this->config['paths']['middlewares'] ?? __DIR__ . '/../../app/Middleware';
+        $path = $dir . '/' . $name . '.php';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $content = $this->renderTemplate('middleware', ['{{name}}' => $name]);
+        $this->createFile($path, $content, "Middleware '$name'");
     }
 
     private function setupEngine(array $args): void
