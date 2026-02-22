@@ -1,0 +1,42 @@
+<?php
+
+namespace Core\Database\Schema;
+
+use Core\Database\Connection;
+
+class Schema
+{
+    /**
+     * Create a new table on the schema.
+     */
+    public static function create(string $table, callable $callback): void
+    {
+        $blueprint = new Blueprint($table);
+
+        // O Dev define as colunas da tabela na Callbback function dele
+        $callback($blueprint);
+
+        // Traduz as ordens do blueprint para mysql bruto
+        $sql = $blueprint->toSql();
+
+        // Descomente na produção para rodar de verdade no PDO:
+        // Connection::getInstance()->exec($sql);
+
+        // Vamos logar para checarmos o SQL gerado:
+        echo "Gerando Tabela: {$table} \n";
+        echo $sql . "\n\n";
+    }
+
+    /**
+     * Drop a table from the schema.
+     */
+    public static function dropIfExists(string $table): void
+    {
+        $sql = "DROP TABLE IF EXISTS `{$table}`;";
+
+        // Descomente:
+        // Connection::getInstance()->exec($sql);
+
+        echo "Excluindo: \n" . $sql . "\n";
+    }
+}
