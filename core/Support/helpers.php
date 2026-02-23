@@ -146,3 +146,27 @@ if (!function_exists('env')) {
         return $value;
     }
 }
+
+if (!function_exists('route')) {
+    /**
+     * Gera uma URL para uma rota nomeada.
+     * 
+     * @param string $name O nome da rota (ex: 'user.show')
+     * @param array $params Parâmetros dinâmicos da rota (ex: ['id' => 3])
+     * @return string A URL completa a ser impressa no HTML
+     */
+    function route(string $name, array $params = []): string
+    {
+        $router = \Core\Routing\Router::getInstance();
+        if ($router) {
+            try {
+                return $router->generateUrl($name, $params);
+            }
+            catch (\Exception $e) {
+                // Em produção, isso pode ser logado e retornar "#" ou lançar até que seja arrumado
+                return '#route-not-found-' . $name;
+            }
+        }
+        return '';
+    }
+}

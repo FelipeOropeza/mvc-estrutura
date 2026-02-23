@@ -4,7 +4,9 @@ namespace Core\Routing;
 
 class Router
 {
+    protected static ?self$instance = null;
     protected array $routes = [];
+    protected array $namedRoutes = [];
     protected array $groupMiddlewares = []; // Para armazenar provisoriamente (se tivermos grupos no futuro)
 
     /**
@@ -13,6 +15,17 @@ class Router
      */
     protected ?string $lastAddedMethod = null;
     protected ?string $lastAddedPattern = null;
+    protected ?string $lastAddedUri = null;
+
+    public function __construct()
+    {
+        self::$instance = $this;
+    }
+
+    public static function getInstance(): ?self
+    {
+        return self::$instance;
+    }
 
     public function get(string $uri, array |callable $action): self
     {
@@ -49,8 +62,59 @@ class Router
         // Guardamos as configs da última rota adicionada pra podermos encadear chamadas a ela
         $this->lastAddedMethod = $method;
         $this->lastAddedPattern = $uriPattern;
+        $this->lastAddedUri = $uri;
 
         return $this;
+    }
+
+    /**
+     * Nomear a última rota adicionada.
+     */
+    public function name(string $name): self
+    {
+        if ($this->lastAddedUri !== null) {
+            $this->namedRoutes[$name] = $this->lastAddedUri;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Gera uma URL completa para uma rota nomeada com base nos parâmetros
+     */
+    public function generateUrl(string $name, array $params = []): string
+    {
+        if (!isset($this->namedRoutes[$name])) {
+            throw new \Exception("A rota com o nome '{$name}' não foi encontrada.");
+        }
+
+        $uri = $this->namedRoutes[$name];
+        $queryParams = [];
+
+        // Substitui os parâmetros dinâmicos na URI (ex: {id} por 3)
+        foreach ($params as $key => $value) {
+            $placeholder = '{' . $key . '}';
+            if (strpos($uri, $placeholder) !== false) {
+                $uri = str_replace($placeholder, (string)$value, $uri);
+            }
+            else {
+                // Se o parâmetro não faz parte da URI, guardamos para ser uma query string
+                $queryParams[$key] = $value;
+            }
+        }
+
+        // Se sobraram parâmetros extras, adiciona como query string
+        if (!empty($queryParams)) {
+            $uri .= '?' . http_build_query($queryParams);
+        }
+
+        // Tenta detectar se estamos rodando em um subdiretório
+        $scriptName = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+        if ($scriptName === '/' || $scriptName === '\\') {
+            $scriptName = '';
+        }
+
+        return $scriptName . $uri;
     }
 
     /**
