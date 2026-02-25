@@ -42,6 +42,7 @@ class Connection
                 // Configura o PDO para lançar exceções e trazer dados como array associativo por padrão
                 self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                self::$instance->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
             }
             catch (PDOException $e) {

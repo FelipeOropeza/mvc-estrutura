@@ -48,8 +48,7 @@ if (!function_exists('view')) {
             $engine = new \Core\View\PhpEngine($viewPath);
         }
 
-        $engine->render($viewName, $data);
-        exit; // Encerra após renderizar a view pra evitar HTML quebrado
+        return $engine->render($viewName, $data);
     }
 }
 
@@ -68,20 +67,7 @@ if (!function_exists('validate')) {
 
         if (!$isValid) {
             $errors = $validator->getErrors();
-
-            if (request()->wantsJson()) {
-                response()->json([
-                    'status' => 'error',
-                    'message' => 'Erro de Validação',
-                    'errors' => $errors
-                ], 422); // API: Devolve JSON (Unprocessable Entity)
-            }
-            else {
-                // Web HTML: Salva erros na Sessão Flash e volta pra página anterior
-                $_SESSION['_flash_errors'] = $errors;
-                $_SESSION['_flash_old'] = request()->all(); // Salva o que a pessoa digitou pra nao perder
-                response()->redirect(request()->referer());
-            }
+            throw new \Core\Exceptions\ValidationException($errors, request()->all());
         }
 
         return $validator->getValidatedData();

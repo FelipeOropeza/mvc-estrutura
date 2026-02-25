@@ -47,6 +47,24 @@ class Handler
         $isApi = (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
             (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') === 0);
 
+        if ($exception instanceof \Core\Exceptions\ValidationException) {
+            if ($isApi) {
+                http_response_code(422);
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'error', 'message' => $exception->getMessage(), 'errors' => $exception->errors]);
+                exit;
+            }
+            else {
+                $_SESSION['_flash_errors'] = $exception->errors;
+                $_SESSION['_flash_old'] = $exception->oldInput;
+                $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+                header("Location: $referer");
+                exit;
+            }
+        }
+
+        // Descobre o código de status HTTP (padrão 500)
+
         // Busca se APP_DEBUG = true (por padrão é true se não encontrar)
         $debug = function_exists('env') ? env('APP_DEBUG', true) : true;
         // String to boolean converstion

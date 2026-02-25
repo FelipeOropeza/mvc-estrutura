@@ -9,7 +9,7 @@ interface EngineInterface
      *
      * @param string $view Nome da view (ex: 'home' ou 'home.html.twig')
      * @param array $data Variaveis que a view recebe
-     * @return void  (imprime o conteudo na tela)
+     * @return string  (Retorna o HTML)
      */
-    public function render(string $view, array $data = []): void;
+    public function render(string $view, array $data = []): string;
 }

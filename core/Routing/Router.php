@@ -154,6 +154,17 @@ class Router
         // Garante que a URI comece com '/' e não termine com '/' (exceto se for apenas '/')
         $uri = '/' . trim($uri, '/');
 
+        // Lógica Global de Redirecionamento da Rota Raiz (Lida da Configuração)
+        if ($uri === '/') {
+            $config = require __DIR__ . '/../../config/app.php';
+            $defaultRoute = $config['app']['default_route'] ?? '/';
+
+            if ($defaultRoute !== '/') {
+                header("Location: " . $defaultRoute);
+                exit;
+            }
+        }
+
         // Procura se alguma rota registrada casa com a URL usando Regex
         $matchedRouteInfos = null;
         $params = [];

@@ -28,7 +28,7 @@ class TwigEngine implements EngineInterface
         ]);
     }
 
-    public function render(string $view, array $data = []): void
+    public function render(string $view, array $data = []): string
     {
         // View padrao do twig se nao passar extensao
         if (!str_ends_with($view, '.twig') && !str_ends_with($view, '.html')) {
@@ -36,11 +36,11 @@ class TwigEngine implements EngineInterface
         }
 
         try {
-            echo $this->twig->render($view, $data);
+            return $this->twig->render($view, $data);
         }
         catch (\Exception $e) {
             http_response_code(500);
-            echo "Erro de Template Twig: " . $e->getMessage();
+            return "Erro de Template Twig: " . $e->getMessage();
         }
     }
 }

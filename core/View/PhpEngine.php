@@ -28,7 +28,7 @@ class PhpEngine implements EngineInterface
         self::$shared[$key] = $value;
     }
 
-    public function render(string $view, array $data = []): void
+    public function render(string $view, array $data = []): string
     {
         $fullPath = $this->resolvePath($view);
 
@@ -57,20 +57,20 @@ class PhpEngine implements EngineInterface
                     extract($layoutMergedData);
                     ob_start();
                     require $layoutPath;
-                    echo ob_get_clean();
+                    return ob_get_clean();
                 }
                 else {
-                    echo "Erro: Layout '{$this->layout}' não encontrado.";
+                    return "Erro: Layout '{$this->layout}' não encontrado.";
                 }
             }
             else {
                 // Sem layout mestre, só imprime a própria view formatada
-                echo $content;
+                return $content;
             }
         }
         else {
             http_response_code(500);
-            echo "Erro: View '{$view}' não encontrada em '{$this->viewPath}'.";
+            return "Erro: View '{$view}' não encontrada em '{$this->viewPath}'.";
         }
     }
 

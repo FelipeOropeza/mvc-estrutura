@@ -28,6 +28,20 @@ abstract class Model
     }
 
     /**
+     * Métodos Mágicos para getters/setters dinâmicos
+     * Isso permite chamar $user->nome mesmo que 'nome' não esteja declarado publicamente.
+     */
+    public function __get(string $name)
+    {
+        return $this->$name ?? null;
+    }
+
+    public function __set(string $name, $value)
+    {
+        $this->$name = $value;
+    }
+
+    /**
      * Valida os dados informados de acordo com os Atributos PHP (#[Required], etc) da Model.
      * Funciona em formato Active Record, segurando e bloqueando a Request caso inviável.
      * 
@@ -44,19 +58,7 @@ abstract class Model
 
         if (!$isValid) {
             $errors = $validator->getErrors();
-
-            if (request()->wantsJson()) {
-                response()->json([
-                    'status' => 'error',
-                    'message' => 'Erro de Validação Atributiva',
-                    'errors' => $errors
-                ], 422); // Rejeita a Request (Unprocessable Content)
-            }
-            else {
-                $_SESSION['_flash_errors'] = $errors;
-                $_SESSION['_flash_old'] = $inputData;
-                response()->redirect(request()->referer());
-            }
+            throw new \Core\Exceptions\ValidationException($errors, $inputData);
         }
 
         return $validator->getValidatedData();
@@ -69,7 +71,7 @@ abstract class Model
     {
         $stmt = $this->db->prepare("SELECT * FROM {$this->table}");
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
     }
 
     /**
@@ -80,6 +82,7 @@ abstract class Model
         $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1");
         $stmt->bindValue(':id', $id);
         $stmt->execute();
+        $stmt->setFetchMode(PDO::FETCH_CLASS, static::class);
         return $stmt->fetch() ?: null;
     }
 
