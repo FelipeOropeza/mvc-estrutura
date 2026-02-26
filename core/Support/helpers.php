@@ -5,6 +5,20 @@ declare(strict_types=1);
 use Core\Http\Request;
 use Core\Http\Response;
 
+if (!function_exists('logger')) {
+    /**
+     * Instancia o Logger do sistema e facilita gravação de arquivos de debug
+     */
+    function logger(): \Core\Support\Logger
+    {
+        static $logger = null;
+        if ($logger === null) {
+            $logger = new \Core\Support\Logger();
+        }
+        return $logger;
+    }
+}
+
 if (!function_exists('app')) {
     /**
      * Helper global para o Container de Injeção de Dependências.

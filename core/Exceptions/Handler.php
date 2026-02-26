@@ -76,6 +76,17 @@ class Handler
         }
 
         // Descobre o código de status HTTP (padrão 500)
+        $code = $exception->getCode();
+        if ($code < 100 || $code >= 600) {
+            $code = 500;
+        }
+
+        // Salva silenciosamente a exceção real para os devs poderem espiar o log depois!
+        logger()->error($exception->getMessage(), [
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
+            'class' => get_class($exception)
+        ]);
 
         // Busca se APP_DEBUG = true (por padrão é true se não encontrar)
         $debug = function_exists('env') ? env('APP_DEBUG', true) : true;
