@@ -1,6 +1,15 @@
-# MVC Base em PHP Puro
+# MVC Base Project (Micro Framework)
 
-Um esqueleto simples e leve para estrutura MVC completa em PHP, pronto para usar com Composer, contendo: Router próprio, Request DTO validator, View Engine simplificada e utilitários da CLI (Forge).
+Um esqueleto PHP puro, ultra-leve e focado em performance (Stateless). Construído do zero para suportar a Arquitetura Moderna do PHP: Container de Injeção de Dependências (PSR-11 feeling), Cycle de Request/Response via Middlewares (PSR-15 feeling), Service Providers e preparado para servidores assíncronos como o FrankenPHP.
+
+## Principais Features Atuais
+
+* **Arquitetura Stateless**: Sem vazamentos globais (Globals como `$_GET` e `$_POST` são embalados no objeto `Request`). 
+* **Container de Injeção de Dependências (IoC)**: Autowiring de classes inteligentes via Reflection API. Funções Globais como `app()` e `logger()`.
+* **Service Providers Lifecycle**: Motor flexível similar ao Laravel, permitindo construção modular de recursos através de classes simples no `config/app.php`.
+* **Segurança e Log de Falhas**: Exceções são silenciadas no arquivo `storage/logs/app.log` se o modo de debug estiver inativo (`APP_DEBUG=false`), blindando a visão do usuário final num Deploy de Produção. Pastas internas da engine são barradas por Apache (`.htaccess`) ou roteamento local seguro (`server.php`).
+* **Router Expressivo e Rápido**: Suporte à parâmetros dinâmicos na URL e Namespaces limpos.
+* **CLI (Forge)**: Uma ferramenta de console robusta e extensível para criar código pré-fabricado.
 
 ## Documentação
 
@@ -29,17 +38,26 @@ composer install
 composer run post-create-project-cmd
 ```
 
-### Iniciando o Servidor Local:
-Uma vez que o projeto esteja instanciado, inicie o servidor interno de prateleira:
+### Iniciando o Servidor Local Seguro:
+Uma vez que o projeto esteja instanciado, inicie o servidor interno:
 ```bash
 composer start
 ```
-E acesse `http://localhost:8000` no seu navegador.
+*(O script `start` apontará para `server.php` garantindo que testes locais reproduzem o travamento de segurança da pasta `/public` com eficiência absoluta).*
 
-### Comandos Rápidos da CLI:
+Acesse `http://localhost:8000` no seu navegador.
+
+---
+
+### Comandos Rápidos da CLI (Forge):
 ```bash
 php forge make:controller NomeController
 php forge make:model TabelaModel
+php forge make:view secao/nova-view
+php forge make:migration CreateUsersTable
+php forge make:middleware VerificarAcessoMiddleware
+php forge migrate
+php forge setup:engine twig
 ```
 
 ## Licença
