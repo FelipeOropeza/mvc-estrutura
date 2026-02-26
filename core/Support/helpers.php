@@ -5,6 +5,23 @@ declare(strict_types=1);
 use Core\Http\Request;
 use Core\Http\Response;
 
+if (!function_exists('app')) {
+    /**
+     * Helper global para o Container de Injeção de Dependências.
+     * Resolve uma classe do container ou retorna a instância do próprio Container.
+     */
+    function app(?string $abstract = null): mixed
+    {
+        $container = \Core\Support\Container::getInstance();
+
+        if ($abstract === null) {
+            return $container;
+        }
+
+        return $container->get($abstract);
+    }
+}
+
 if (!function_exists('response')) {
     /**
      * Helper global para a classe Response.

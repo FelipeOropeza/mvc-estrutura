@@ -195,59 +195,23 @@ class Router
             // Vamos construir a destinação final (O Action/Controller sendo invocado)
             // Esse é o centro absoluto da cebola
             $destination = function (\Core\Http\Request $request) use ($action, $params) {
-                if (is_callable($action)) {
+                $container = \Core\Support\Container::getInstance();
+
+                // Se a ação já for um callable simples (Closure)
+                if (is_callable($action) && !is_array($action)) {
                     return call_user_func_array($action, array_values($params));
                 }
 
-                if (is_array($action)) {
-                    [$controller, $methodName] = $action;
-
-                    // Verifica o construtor do Controller
-                    $reflector = new \ReflectionClass($controller);
-
-                    $constructorArgs = [];
-                    if ($constructor = $reflector->getConstructor()) {
-                        foreach ($constructor->getParameters() as $param) {
-                            $paramType = $param->getType();
-                            // Se o construtor pedir uma classe, instanciamos ela pra ele (Dependency Injection)
-                            if ($paramType && !$paramType->isBuiltin()) {
-                                $className = $paramType->getName();
-                                $constructorArgs[] = new $className();
-                            } else {
-                                $constructorArgs[] = null;
-                            }
-                        }
-                    }
-
-                    $controllerInstance = $reflector->newInstanceArgs($constructorArgs);
-
-                    if (method_exists($controllerInstance, $methodName)) {
-                        // Prepara os argumentos do método ($id, etc) na ordem que o controller pediu
-                        $methodReflector = new \ReflectionMethod($controllerInstance, $methodName);
-                        $methodArgs = [];
-
-                        foreach ($methodReflector->getParameters() as $param) {
-                            $paramName = $param->getName();
-
-                            if (array_key_exists($paramName, $params)) {
-                                $methodArgs[] = $params[$paramName];
-                            } elseif ($param->getType() && $param->getType()->getName() === \Core\Http\Request::class) {
-                                // Injetamos a Request se ele a solicitou e ela entrou como parametro no closure!
-                                $methodArgs[] = $request;
-                            } else {
-                                $methodArgs[] = null;
-                            }
-                        }
-
-                        // Chama o controller e retorna os dados
-                        return $methodReflector->invokeArgs($controllerInstance, $methodArgs);
-                    }
-                }
+                // O Action Controller com o Container da PSR-11 fazendo a Magica de Autowiring!
+                return $container->call($action, $params);
             }; // Fim da destination / Action Controller
 
 
             // Criamos o objeto global Request (que pode ser interceptado e modificado) 
             $request = request();
+
+            // Cadastra a instância viva da Request no Container pra todo o framework poder Injetá-la
+            \Core\Support\Container::getInstance()->instance(\Core\Http\Request::class, $request);
 
             // Criamos e executamos a Pipeline de Middlewares injetando no fim o Destination (Action)
             $pipeline = new \Core\Http\Pipeline();
