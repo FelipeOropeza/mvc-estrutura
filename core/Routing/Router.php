@@ -141,13 +141,13 @@ class Router
         return $this;
     }
 
-    public function dispatch(): void
+    public function dispatch(\Core\Http\Request $request): \Core\Http\Response
     {
-        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $uri = parse_url($request->server['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $method = $request->server['REQUEST_METHOD'] ?? 'GET';
 
         // Tenta detectar se estamos rodando em um subdiretório
-        $scriptName = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+        $scriptName = dirname($request->server['SCRIPT_NAME'] ?? '');
 
         // Se o scriptName não for apenas '/' (root), removemos ele da URI
         if ($scriptName !== '/' && strpos((string) $uri, (string) $scriptName) === 0) {
@@ -163,8 +163,7 @@ class Router
             $defaultRoute = $config['app']['default_route'] ?? '/';
 
             if ($defaultRoute !== '/') {
-                header("Location: " . $defaultRoute);
-                exit;
+                return \Core\Http\Response::makeRedirect($defaultRoute, 302);
             }
         }
 
@@ -215,16 +214,24 @@ class Router
 
             // Criamos e executamos a Pipeline de Middlewares injetando no fim o Destination (Action)
             $pipeline = new \Core\Http\Pipeline();
-            $pipeline
+            $result = $pipeline
                 ->send($request)
                 ->through($routeMiddlewares)
                 ->then($destination);
 
-            return; // Terminou o dispatch da rota mapeada
+            // Garante que o retorno seja sempre um objeto Core\Http\Response
+            if ($result instanceof \Core\Http\Response) {
+                return $result;
+            }
+
+            if (is_array($result) || is_object($result)) {
+                return \Core\Http\Response::makeJson($result);
+            }
+
+            return new \Core\Http\Response((string) $result);
         }
 
         // 404 handling simples
-        http_response_code(404);
-        echo "404 - Rota não encontrada: $uri";
+        return new \Core\Http\Response("404 - Rota não encontrada: $uri", 404);
     }
 }

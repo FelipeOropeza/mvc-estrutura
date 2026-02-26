@@ -64,13 +64,14 @@ class Handler
                 http_response_code(422);
                 header('Content-Type: application/json');
                 echo json_encode(['status' => 'error', 'message' => $exception->getMessage(), 'errors' => $exception->errors]);
-                exit;
+                // return without exit -> ends handler gracefully
+                return;
             } else {
                 $_SESSION['_flash_errors'] = $exception->errors;
                 $_SESSION['_flash_old'] = $exception->oldInput;
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
                 header("Location: $referer");
-                exit;
+                return;
             }
         }
 
@@ -116,7 +117,7 @@ class Handler
         }
 
         echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        exit;
+        return;
     }
 
     /**
@@ -153,6 +154,6 @@ class Handler
             echo "<p style='color: #6b7280; font-size: 1.5rem; margin-top: 10px;'>Ocorreu um erro inesperado.</p>";
             echo "</div>";
         }
-        exit;
+        return;
     }
 }

@@ -6,44 +6,100 @@ namespace Core\Http;
 
 class Response
 {
-    /**
-     * Retorna uma string comum como texto.
-     * 
-     * @param string $data
-     * @param int $status
-     * @return void
-     */
-    public function send(string $data, int $status = 200): void
+    private string $content = '';
+    private int $statusCode = 200;
+    private array $headers = [];
+
+    public function __construct(string $content = '', int $statusCode = 200, array $headers = [])
     {
-        http_response_code($status);
-        echo $data;
-        exit;
+        $this->content = $content;
+        $this->statusCode = $statusCode;
+        $this->headers = $headers;
+    }
+
+    public function setContent(string $content): self
+    {
+        $this->content = $content;
+        return $this;
+    }
+
+    public function setStatusCode(int $code): self
+    {
+        $this->statusCode = $code;
+        return $this;
+    }
+
+    public function setHeader(string $name, string $value): self
+    {
+        $this->headers[$name] = $value;
+        return $this;
     }
 
     /**
-     * Envia uma resposta JSON, útil para APIs (O clássico app->response->json do Leaf).
-     * 
-     * @param array $data
-     * @param int $status
-     * @return void
+     * Dispara a Resposta final (Cuidado no FrankenPHP, prefira retorno da Response).
      */
-    public function json(array $data, int $status = 200): void
+    public function send(string $data = null, int $status = null): void
     {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        exit;
+        if ($data !== null) {
+            $this->content = $data;
+        }
+        if ($status !== null) {
+            $this->statusCode = $status;
+        }
+
+        if (!headers_sent()) {
+            http_response_code($this->statusCode);
+
+            foreach ($this->headers as $name => $value) {
+                header("{$name}: {$value}");
+            }
+        }
+
+        echo $this->content;
+        // Removido o 'exit' global para permitir Worker Mode (FrankenPHP) e término gracioso.
     }
 
     /**
-     * Redireciona para outra URL.
-     * 
-     * @param string $url
-     * @return void
+     * Responde como JSON (Imediato, para legado)
+     */
+    public function json(array|object $data, int $status = 200): void
+    {
+        $this->setContent(json_encode($data, JSON_UNESCAPED_UNICODE));
+        $this->setStatusCode($status);
+        $this->setHeader('Content-Type', 'application/json');
+
+        $this->send();
+    }
+
+    /**
+     * Redireciona para outra URL
      */
     public function redirect(string $url): void
     {
-        header("Location: $url");
-        exit;
+        $this->setContent('');
+        $this->setStatusCode(302);
+        $this->setHeader('Location', $url);
+
+        $this->send();
+    }
+
+    /**
+     * Fabricante Estático para redirecionamento sem emitir de imediato
+     */
+    public static function makeRedirect(string $url, int $status = 302): self
+    {
+        return new self('', $status, ['Location' => $url]);
+    }
+
+    /**
+     * Fabricante Estático para JSON sem emitir de imediato
+     */
+    public static function makeJson(array|object $data, int $status = 200): self
+    {
+        return new self(
+            json_encode($data, JSON_UNESCAPED_UNICODE),
+            $status,
+            ['Content-Type' => 'application/json']
+        );
     }
 }

@@ -27,10 +27,22 @@ $GLOBALS['flash_old'] = $_SESSION['_flash_old'] ?? [];
 unset($_SESSION['_flash_errors'], $_SESSION['_flash_old']);
 // require_once __DIR__ . '/../config/config.php';
 
+// move o container boot para a parte superior 
+$container = \Core\Support\Container::getInstance();
+
+// Inicializamos o componente Central de Roteamento
 $router = new Router();
+$container->instance(Router::class, $router);
 
 // Carrega as rotas da aplicação
 require_once __DIR__ . '/../routes/web.php';
 
-// Dispara a rota correspondente
-$router->dispatch();
+// Dispara a Rota usando a nova Arquitetura PSR-15 (Request -> Kernel -> Response)
+// Tudo vira objeto (Sem globais sujas como $_GET/$_POST voando)
+$request = \Core\Http\Request::capture();
+$kernel = new \Core\Http\Kernel($router); // Ou $container->get(Kernel::class)
+
+$response = $kernel->handle($request);
+
+// O Laravel / FrankenPHP manda a Resposta final para o cliente aqui
+$response->send();
