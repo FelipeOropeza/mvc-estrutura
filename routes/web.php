@@ -8,4 +8,4 @@ use App\Controllers\HomeController;
 // ROTAS DE APLICAÇÃO (WEB / HTML)
 // ==========================================
 
-$router->get('/', [HomeController::class , 'index']);
+$router->get('/home', [HomeController::class , 'index']);

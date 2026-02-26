@@ -1,53 +1,41 @@
 <?php
 
-use Core\Routing\Router;
-use Core\Exceptions\Handler;
+/**
+ * MVC Base Project - Micro Framework
+ * Um framework PHP simplificado e performático de arquitetura moderna (Stateless).
+ */
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Registra o tratador global de exceções
-$exceptionHandler = new Handler();
-$exceptionHandler->register();
+/*
+|--------------------------------------------------------------------------
+| Inicie a Aplicação e o "Motor" (Container + Providers)
+|--------------------------------------------------------------------------
+|
+| Importamos o script de configuração global da aplicação. 
+| Lá é onde o ambiente, a injeção de dependências e os provedores são lidos.
+*/
 
-// Tenta carregar variáveis de ambiente
-if (class_exists(\Dotenv\Dotenv::class) && file_exists(__DIR__ . '/../.env')) {
-    $dotenv = \Dotenv\Dotenv::createUnsafeImmutable(__DIR__ . '/../');
-    $dotenv->safeLoad();
-}
+$app = require_once __DIR__ . '/../bootstrap/app.php';
 
-// Inicia a sessão para suportar Flash Data (Erros de Validação e Inputs antigos)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+/*
+|--------------------------------------------------------------------------
+| Trate e Direcione o Request 
+|--------------------------------------------------------------------------
+|
+| A aplicação, sendo baseada em Request => Response passará
+| as informações enviadas pelo navegador para o Kernel (Middlewares/Rotas).
+*/
 
-// Move as mensagens flash da sessão para uma variável global temporária 
-// para estarem disponíveis apenas durante este request, e as apaga da sessão real.
-$GLOBALS['flash_errors'] = $_SESSION['_flash_errors'] ?? [];
-$GLOBALS['flash_old'] = $_SESSION['_flash_old'] ?? [];
-unset($_SESSION['_flash_errors'], $_SESSION['_flash_old']);
-// ==========================================
-// 🚀 INICIALIZAÇÃO E ARQUITETURA DE SERVIÇOS
-// ==========================================
-
-// 1. Inicia o "App" fornecendo a base principal onde o framework e a loja moram
-$app = new \Core\Foundation\Application(realpath(__DIR__ . '/../'));
-
-// 2. Lê configurações e aciona todos os provedores na Prancheta (Register)
-$app->registerConfiguredProviders();
-
-// 3. Dá o Boot (Liga todo o sistema na ordem correta)
-$app->boot();
-
-// ==========================================
-// 📡 CICLO DE VIDA DA REQUISIÇÃO (Stateless)
-// ==========================================
-
-// Request viaja pelo Kernel de Middlewares até o Controlador e volta como Resposta
 $request = \Core\Http\Request::capture();
-
-// O Router já foi automaticamente criado pelo RoutingServiceProvider
-// Kernel agora pode inclusive ser magicizado (resolvido automaticamente mas p/ simplicidade criamos manual por enqnato)
-$kernel = new \Core\Http\Kernel($app->get(Router::class));
+$kernel = new \Core\Http\Kernel($app->get(\Core\Routing\Router::class));
 
 $response = $kernel->handle($request);
+
+/*
+|--------------------------------------------------------------------------
+| Entregue a Resposta ao Cliente Final
+|--------------------------------------------------------------------------
+*/
+
 $response->send();
