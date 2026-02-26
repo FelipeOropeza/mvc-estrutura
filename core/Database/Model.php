@@ -1,27 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\Database;
 
 use PDO;
-use PDOException;
 
 abstract class Model
 {
     /** @var PDO */
-    protected $db;
+    protected PDO $db;
 
-    /** @var string Nome da tabela (se null, será plural do nome da classe) */
-    protected $table = null;
+    /** @var string|null Nome da tabela (se null, será plural do nome da classe) */
+    protected ?string $table = null;
 
     /** @var string Nome da chave primária */
-    protected $primaryKey = 'id';
+    protected string $primaryKey = 'id';
 
     public function __construct()
     {
         $this->db = Connection::getInstance();
 
         if ($this->table === null) {
-            $classPath = explode('\\', get_class($this));
+            $classPath = explode('\\', static::class);
             $className = end($classPath);
             $this->table = strtolower($className) . 's'; // Muito básico, idealmente seria pluralizador
         }
@@ -30,13 +31,20 @@ abstract class Model
     /**
      * Métodos Mágicos para getters/setters dinâmicos
      * Isso permite chamar $user->nome mesmo que 'nome' não esteja declarado publicamente.
+     * 
+     * @param string $name
+     * @return mixed
      */
-    public function __get(string $name)
+    public function __get(string $name): mixed
     {
         return $this->$name ?? null;
     }
 
-    public function __set(string $name, $value)
+    /**
+     * @param string $name
+     * @param mixed $value
+     */
+    public function __set(string $name, mixed $value): void
     {
         $this->$name = $value;
     }
@@ -66,6 +74,8 @@ abstract class Model
 
     /**
      * Busca todos os registros da tabela
+     * 
+     * @return array
      */
     public function all(): array
     {
@@ -76,14 +86,19 @@ abstract class Model
 
     /**
      * Busca um registro pelo seu ID
+     * 
+     * @param mixed $id
+     * @return static|null
      */
-    public function find($id)
+    public function find(mixed $id): ?static
     {
         $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1");
         $stmt->bindValue(':id', $id);
         $stmt->execute();
         $stmt->setFetchMode(PDO::FETCH_CLASS, static::class);
-        return $stmt->fetch() ?: null;
+        $result = $stmt->fetch();
+
+        return $result !== false ? $result : null;
     }
 
     /**
@@ -108,17 +123,17 @@ abstract class Model
 
         $stmt->execute();
 
-        return (int)$this->db->lastInsertId();
+        return (int) $this->db->lastInsertId();
     }
 
     /**
      * Atualiza um registro existente
      * 
-     * @param int $id
+     * @param mixed $id
      * @param array $data Ex: ['nome' => 'Felipe 2']
      * @return bool
      */
-    public function update($id, array $data): bool
+    public function update(mixed $id, array $data): bool
     {
         $fields = [];
         foreach ($data as $key => $value) {
@@ -141,24 +156,30 @@ abstract class Model
     /**
      * Deleta um registro pelo ID
      * 
-     * @param int|array $id
+     * @param mixed $id
      * @return bool
      */
-    public function delete($id): bool
+    public function delete(mixed $id): bool
     {
         $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id);
+
         return $stmt->execute();
     }
 
     /**
      * Retorna a query builder caso queira fazer queries customizadas no controller
+     * 
+     * @param string $sql
+     * @param array $params
+     * @return array
      */
-    public function query(string $sql, array $params = [])
+    public function query(string $sql, array $params = []): array
     {
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\Routing;
+
+use Closure;
 
 class Router
 {
-    protected static ?self$instance = null;
+    protected static ?self $instance = null;
     protected array $routes = [];
     protected array $namedRoutes = [];
     protected array $groupMiddlewares = []; // Para armazenar provisoriamente (se tivermos grupos no futuro)
@@ -27,27 +31,27 @@ class Router
         return self::$instance;
     }
 
-    public function get(string $uri, array |callable $action): self
+    public function get(string $uri, array|Closure|callable $action): self
     {
         return $this->register('GET', $uri, $action);
     }
 
-    public function post(string $uri, array |callable $action): self
+    public function post(string $uri, array|Closure|callable $action): self
     {
         return $this->register('POST', $uri, $action);
     }
 
-    public function put(string $uri, array |callable $action): self
+    public function put(string $uri, array|Closure|callable $action): self
     {
         return $this->register('PUT', $uri, $action);
     }
 
-    public function delete(string $uri, array |callable $action): self
+    public function delete(string $uri, array|Closure|callable $action): self
     {
         return $this->register('DELETE', $uri, $action);
     }
 
-    protected function register(string $method, string $uri, array |callable $action): self
+    protected function register(string $method, string $uri, array|Closure|callable $action): self
     {
         // Converte a URI que tem parâmetros como {id} para um padrão de Regex
         $uriPattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<\1>[a-zA-Z0-9_-]+)', $uri);
@@ -96,8 +100,7 @@ class Router
             $placeholder = '{' . $key . '}';
             if (strpos($uri, $placeholder) !== false) {
                 $uri = str_replace($placeholder, (string)$value, $uri);
-            }
-            else {
+            } else {
                 // Se o parâmetro não faz parte da URI, guardamos para ser uma query string
                 $queryParams[$key] = $value;
             }
@@ -140,19 +143,19 @@ class Router
 
     public function dispatch(): void
     {
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $method = $_SERVER['REQUEST_METHOD'];
+        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
         // Tenta detectar se estamos rodando em um subdiretório
-        $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+        $scriptName = dirname($_SERVER['SCRIPT_NAME'] ?? '');
 
         // Se o scriptName não for apenas '/' (root), removemos ele da URI
-        if ($scriptName !== '/' && strpos($uri, $scriptName) === 0) {
-            $uri = substr($uri, strlen($scriptName));
+        if ($scriptName !== '/' && strpos((string) $uri, (string) $scriptName) === 0) {
+            $uri = substr((string) $uri, strlen((string) $scriptName));
         }
 
         // Garante que a URI comece com '/' e não termine com '/' (exceto se for apenas '/')
-        $uri = '/' . trim($uri, '/');
+        $uri = '/' . trim((string) $uri, '/');
 
         // Lógica Global de Redirecionamento da Rota Raiz (Lida da Configuração)
         if ($uri === '/') {
@@ -210,8 +213,7 @@ class Router
                             if ($paramType && !$paramType->isBuiltin()) {
                                 $className = $paramType->getName();
                                 $constructorArgs[] = new $className();
-                            }
-                            else {
+                            } else {
                                 $constructorArgs[] = null;
                             }
                         }
@@ -229,12 +231,10 @@ class Router
 
                             if (array_key_exists($paramName, $params)) {
                                 $methodArgs[] = $params[$paramName];
-                            }
-                            else if ($param->getType() && $param->getType()->getName() === \Core\Http\Request::class) {
+                            } elseif ($param->getType() && $param->getType()->getName() === \Core\Http\Request::class) {
                                 // Injetamos a Request se ele a solicitou e ela entrou como parametro no closure!
                                 $methodArgs[] = $request;
-                            }
-                            else {
+                            } else {
                                 $methodArgs[] = null;
                             }
                         }

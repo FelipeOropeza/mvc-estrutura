@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Core\Http\Request;
 use Core\Http\Response;
 
@@ -35,7 +37,7 @@ if (!function_exists('view')) {
     /**
      * Helper global para renderizar uma View direto.
      */
-    function view(string $viewName, array $data = [])
+    function view(string $viewName, array $data = []): mixed
     {
         $config = require __DIR__ . '/../../config/app.php';
         $viewPath = $config['paths']['views'];
@@ -43,8 +45,7 @@ if (!function_exists('view')) {
 
         if ($engineType === 'twig') {
             $engine = new \Core\View\TwigEngine($viewPath);
-        }
-        else {
+        } else {
             $engine = new \Core\View\PhpEngine($viewPath);
         }
 
@@ -59,7 +60,7 @@ if (!function_exists('validate')) {
      * @param object $dto O Objeto de Transferencia (ex: UserCreateRequest)
      * @return array Retorna os dados válidados ou exibe a falha como JSON de forma automatizada(422)
      */
-    function validate(object $dto)
+    function validate(object $dto): array
     {
         $validator = new \Core\Validation\Validator();
         // Pegamos todos os parametros (Seja POST/GET/JSON) e tentamos "encaixar" no DTO
@@ -79,7 +80,7 @@ if (!function_exists('errors')) {
      * Recupera erros de validação da sessão (para usar nas Views).
      * Se passar o nome do campo (ex: 'email'), devolve só a string do erro daquele campo.
      */
-    function errors(?string $field = null)
+    function errors(?string $field = null): mixed
     {
         $errors = $GLOBALS['flash_errors'] ?? [];
         if ($field) {
@@ -95,7 +96,7 @@ if (!function_exists('old')) {
     /**
      * Mantém o valor preenchido no formulário caso tenha dado erro de validação.
      */
-    function old(string $field, $default = '')
+    function old(string $field, mixed $default = ''): mixed
     {
         $oldInputs = $GLOBALS['flash_old'] ?? [];
         return $oldInputs[$field] ?? $default;
@@ -106,7 +107,7 @@ if (!function_exists('env')) {
     /**
      * Recupera uma variável de ambiente ou retorna um valor padrão.
      */
-    function env(string $key, $default = null)
+    function env(string $key, mixed $default = null): mixed
     {
         $value = $_ENV[$key] ?? $_SERVER[$key] ?? null;
 
@@ -114,7 +115,7 @@ if (!function_exists('env')) {
             return $default;
         }
 
-        switch (strtolower($value)) {
+        switch (strtolower((string) $value)) {
             case 'true':
             case '(true)':
                 return true;
@@ -147,8 +148,7 @@ if (!function_exists('route')) {
         if ($router) {
             try {
                 return $router->generateUrl($name, $params);
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 // Em produção, isso pode ser logado e retornar "#" ou lançar até que seja arrumado
                 return '#route-not-found-' . $name;
             }

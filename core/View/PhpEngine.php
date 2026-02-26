@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\View;
 
 class PhpEngine implements EngineInterface
@@ -57,21 +59,18 @@ class PhpEngine implements EngineInterface
                     extract($layoutMergedData);
                     ob_start();
                     require $layoutPath;
-                    return ob_get_clean();
+                    return (string) ob_get_clean();
                 }
-                else {
-                    return "Erro: Layout '{$this->layout}' não encontrado.";
-                }
+
+                return "Erro: Layout '{$this->layout}' não encontrado.";
             }
-            else {
-                // Sem layout mestre, só imprime a própria view formatada
-                return $content;
-            }
+
+            // Sem layout mestre, só imprime a própria view formatada
+            return (string) $content;
         }
-        else {
-            http_response_code(500);
-            return "Erro: View '{$view}' não encontrada em '{$this->viewPath}'.";
-        }
+
+        http_response_code(500);
+        return "Erro: View '{$view}' não encontrada em '{$this->viewPath}'.";
     }
 
     /**
@@ -123,8 +122,7 @@ class PhpEngine implements EngineInterface
             $data = array_merge(self::$shared, $data);
             extract($data);
             require $fullPath;
-        }
-        else {
+        } else {
             echo "<!-- Partial '{$view}' não encontrado -->";
         }
     }

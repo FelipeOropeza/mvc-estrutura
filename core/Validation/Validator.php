@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\Validation;
 
 use ReflectionClass;
@@ -33,7 +35,7 @@ class Validator
             $property->setValue($requestObject, $value);
 
             // Pega as regras em formato de Atributos do PHP 8
-            $attributes = $property->getAttributes(ValidationRule::class , \ReflectionAttribute::IS_INSTANCEOF);
+            $attributes = $property->getAttributes(ValidationRule::class, \ReflectionAttribute::IS_INSTANCEOF);
 
             foreach ($attributes as $attribute) {
                 // Instancia e Roda a regra de Validação (Required, Email, etc)

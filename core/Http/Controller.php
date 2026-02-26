@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\Http;
 
 use Core\View\PhpEngine;
@@ -19,8 +21,7 @@ abstract class Controller
 
         if ($engineType === 'twig') {
             $this->engine = new TwigEngine($viewPath);
-        }
-        else {
+        } else {
             $this->engine = new PhpEngine($viewPath);
         }
     }

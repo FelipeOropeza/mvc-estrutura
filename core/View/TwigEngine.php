@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\View;
 
 class TwigEngine implements EngineInterface
 {
-    private $twig;
+    private mixed $twig;
     private string $viewPath;
 
     public function __construct(string $viewPath)
@@ -37,8 +39,7 @@ class TwigEngine implements EngineInterface
 
         try {
             return $this->twig->render($view, $data);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             http_response_code(500);
             return "Erro de Template Twig: " . $e->getMessage();
         }

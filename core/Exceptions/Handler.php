@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\Exceptions;
 
 use Throwable;
@@ -10,7 +12,7 @@ class Handler
     /**
      * Registra o controlador de exceções e erros globais.
      */
-    public function register()
+    public function register(): void
     {
         // Garante que o PHP reporte tudo para o nosso manipulador
         error_reporting(E_ALL);
@@ -21,19 +23,29 @@ class Handler
 
     /**
      * Converte erros normais do PHP (Warnings, Notices) em Exceções para podermos tratá-los unificados.
+     * 
+     * @param int $level
+     * @param string $message
+     * @param string $file
+     * @param int $line
+     * @return void
+     * @throws ErrorException
      */
-    public function handleError($level, $message, $file = '', $line = 0)
+    public function handleError(int $level, string $message, string $file = '', int $line = 0): void
     {
         // Verificamos se o erro reportado está incluso no nível de error_reporting atual
-        if (error_reporting()& $level) {
+        if (error_reporting() & $level) {
             throw new ErrorException($message, 0, $level, $file, $line);
         }
     }
 
     /**
      * Captura qualquer exceção não tratada na aplicação.
+     * 
+     * @param Throwable $exception
+     * @return void
      */
-    public function handleException(Throwable $exception)
+    public function handleException(Throwable $exception): void
     {
         // Descobre o código de status HTTP (padrão 500)
         $code = $exception->getCode();
@@ -53,8 +65,7 @@ class Handler
                 header('Content-Type: application/json');
                 echo json_encode(['status' => 'error', 'message' => $exception->getMessage(), 'errors' => $exception->errors]);
                 exit;
-            }
-            else {
+            } else {
                 $_SESSION['_flash_errors'] = $exception->errors;
                 $_SESSION['_flash_old'] = $exception->oldInput;
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
@@ -67,23 +78,28 @@ class Handler
 
         // Busca se APP_DEBUG = true (por padrão é true se não encontrar)
         $debug = function_exists('env') ? env('APP_DEBUG', true) : true;
+
         // String to boolean converstion
         if (is_string($debug)) {
             $debug = filter_var($debug, FILTER_VALIDATE_BOOLEAN);
         }
 
         if ($isApi) {
-            $this->renderJson($exception, $code, $debug);
-        }
-        else {
-            $this->renderHtml($exception, $code, $debug);
+            $this->renderJson($exception, (int) $code, (bool) $debug);
+        } else {
+            $this->renderHtml($exception, (int) $code, (bool) $debug);
         }
     }
 
     /**
      * Retorna a resposta de erro em formato JSON.
+     * 
+     * @param Throwable $exception
+     * @param int $code
+     * @param bool $debug
+     * @return void
      */
-    private function renderJson(Throwable $exception, int $code, bool $debug)
+    private function renderJson(Throwable $exception, int $code, bool $debug): void
     {
         header('Content-Type: application/json');
 
@@ -105,8 +121,13 @@ class Handler
 
     /**
      * Retorna a resposta de erro em formato HTML.
+     * 
+     * @param Throwable $exception
+     * @param int $code
+     * @param bool $debug
+     * @return void
      */
-    private function renderHtml(Throwable $exception, int $code, bool $debug)
+    private function renderHtml(Throwable $exception, int $code, bool $debug): void
     {
         if ($debug) {
             // Tela de erro detalhada para desenvolvimento
@@ -125,8 +146,7 @@ class Handler
             echo "<h3>Stack Trace:</h3>";
             echo "<pre class='trace'>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>";
             echo '</div>';
-        }
-        else {
+        } else {
             // Tela genérica de erro para o usuário em Produção
             echo "<div style='font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 100px 20px;'>";
             echo "<h1 style='color: #374151; font-size: 6rem; margin: 0;'>$code</h1>";
