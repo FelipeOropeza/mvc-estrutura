@@ -34,5 +34,23 @@ return [
         'view_engine' => 'php',
         // Rota padrão do redirecionamento raiz, caso configurado
         'default_route' => function_exists('env') ? env('APP_DEFAULT_ROUTE', '/') : '/',
+    ],
+
+    /*
+     |--------------------------------------------------------------------------
+     | Service Providers Autoload
+     |--------------------------------------------------------------------------
+     |
+     | Os provedores encarregados por bootar e configurar as fundações da Aplicação.
+     | O ciclo de 'Kernel' lê tudo dentro desse array ao ligar o site.
+     | Usuários podem adicionar `App\Providers\AppServiceProvider::class` aqui
+     | e construir suas lógicas separadas da pasta core/.
+     |
+     */
+    'providers' => [
+        \Core\Providers\DatabaseServiceProvider::class,
+        \Core\Providers\RoutingServiceProvider::class,
+
+        \App\Providers\AppServiceProvider::class,
     ]
 ];

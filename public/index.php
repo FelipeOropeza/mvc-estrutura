@@ -25,24 +25,29 @@ if (session_status() === PHP_SESSION_NONE) {
 $GLOBALS['flash_errors'] = $_SESSION['_flash_errors'] ?? [];
 $GLOBALS['flash_old'] = $_SESSION['_flash_old'] ?? [];
 unset($_SESSION['_flash_errors'], $_SESSION['_flash_old']);
-// require_once __DIR__ . '/../config/config.php';
+// ==========================================
+// 🚀 INICIALIZAÇÃO E ARQUITETURA DE SERVIÇOS
+// ==========================================
 
-// move o container boot para a parte superior 
-$container = \Core\Support\Container::getInstance();
+// 1. Inicia o "App" fornecendo a base principal onde o framework e a loja moram
+$app = new \Core\Foundation\Application(realpath(__DIR__ . '/../'));
 
-// Inicializamos o componente Central de Roteamento
-$router = new Router();
-$container->instance(Router::class, $router);
+// 2. Lê configurações e aciona todos os provedores na Prancheta (Register)
+$app->registerConfiguredProviders();
 
-// Carrega as rotas da aplicação
-require_once __DIR__ . '/../routes/web.php';
+// 3. Dá o Boot (Liga todo o sistema na ordem correta)
+$app->boot();
 
-// Dispara a Rota usando a nova Arquitetura PSR-15 (Request -> Kernel -> Response)
-// Tudo vira objeto (Sem globais sujas como $_GET/$_POST voando)
+// ==========================================
+// 📡 CICLO DE VIDA DA REQUISIÇÃO (Stateless)
+// ==========================================
+
+// Request viaja pelo Kernel de Middlewares até o Controlador e volta como Resposta
 $request = \Core\Http\Request::capture();
-$kernel = new \Core\Http\Kernel($router); // Ou $container->get(Kernel::class)
+
+// O Router já foi automaticamente criado pelo RoutingServiceProvider
+// Kernel agora pode inclusive ser magicizado (resolvido automaticamente mas p/ simplicidade criamos manual por enqnato)
+$kernel = new \Core\Http\Kernel($app->get(Router::class));
 
 $response = $kernel->handle($request);
-
-// O Laravel / FrankenPHP manda a Resposta final para o cliente aqui
 $response->send();
