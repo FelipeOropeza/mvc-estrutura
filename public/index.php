@@ -20,16 +20,13 @@ $app = require_once __DIR__ . '/../bootstrap/app.php';
 
 /*
 |--------------------------------------------------------------------------
-| Trate e Direcione o Request 
+| Trate e Direcione o Request (Com Suporte a Worker Mode - FrankenPHP)
 |--------------------------------------------------------------------------
 |
-| A aplicação, sendo baseada em Request => Response passará
-| as informações enviadas pelo navegador para o Kernel (Middlewares/Rotas).
-*/
-
-$request = \Core\Http\Request::capture();
+| A aplicação processa a requisição e devolve uma resposta. Se estivermos
+| rodando no modo Worker do FrankenPHP, o loop manterá a aplicação viva.
 $kernel = new \Core\Http\Kernel($app->get(\Core\Routing\Router::class));
-
+$request = \Core\Http\Request::capture();
 $response = $kernel->handle($request);
 
 /*

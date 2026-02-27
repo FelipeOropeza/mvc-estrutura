@@ -14,6 +14,7 @@ class Kernel
      * Middlewares globais que rodam em toda requisição, antes de descobrir a rota.
      */
     protected array $globalMiddlewares = [
+        \Core\Http\Middleware\StartSession::class,
         // \App\Http\Middlewares\HandleCors::class,
     ];
 

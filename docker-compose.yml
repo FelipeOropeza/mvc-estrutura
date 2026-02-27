@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # Nosso serviço principal da web (A aplicação)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mvc_frankenphp
+    ports:
+      # A porta da esquerda (Seu PC) aponta para a porta da direita (Dentro do docker virtual)
+      - "8000:8000"
+    environment:
+      # Se você criar um arquivo .env depois, o Docker pode puxá-lo aqui também
+      - APP_ENV=local
+    volumes:
+      # IMPORTANTE: Esse volume (-) mapeia a pasta atual (onde está o docker-compose)
+      # para a pasta /app do Container. Isso significa que qualquer código que você
+      # edite agora no VS Code do Windows, será atualizado "magicamente" lá dentro!
+      - .:/app
+    restart: unless-stopped

@@ -78,9 +78,9 @@ class Pipeline
     {
         return function ($stack, $pipe) {
             return function ($passable) use ($stack, $pipe) {
-                // Instancia o middleware caso ele seja passado como String (nome da classe)
+                // Instancia o middleware via Container para permitir Injeção de Dependências no construct!
                 if (is_string($pipe) && class_exists($pipe)) {
-                    $pipe = new $pipe();
+                    $pipe = \Core\Support\Container::getInstance()->get($pipe);
                 }
 
                 // Verifica se implementa nosso MiddlewareInterface ou possui o método handle

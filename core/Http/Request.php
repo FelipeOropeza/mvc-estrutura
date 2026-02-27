@@ -13,6 +13,7 @@ class Request
     public array $cookies;
     public array $files;
     public string $content;
+    protected ?Session $session = null;
 
     public function __construct(array $query = [], array $post = [], array $server = [], array $cookies = [], array $files = [], string $content = '')
     {
@@ -97,5 +98,15 @@ class Request
     public function referer(): string
     {
         return (string) ($this->server['HTTP_REFERER'] ?? '/');
+    }
+
+    public function setSession(Session $session): void
+    {
+        $this->session = $session;
+    }
+
+    public function session(): ?Session
+    {
+        return $this->session;
     }
 }

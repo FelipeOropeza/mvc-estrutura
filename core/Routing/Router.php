@@ -11,7 +11,7 @@ class Router
     protected static ?self $instance = null;
     protected array $routes = [];
     protected array $namedRoutes = [];
-    protected array $groupMiddlewares = []; // Para armazenar provisoriamente (se tivermos grupos no futuro)
+    protected array $groupStack = [];
 
     /**
      * Retorna a nova rota/ação associada para podermos encadear métodos nela.
@@ -51,8 +51,54 @@ class Router
         return $this->register('DELETE', $uri, $action);
     }
 
+    public function group(array $attributes, Closure $callback): void
+    {
+        // Se já estamos dentro de um grupo, mesclamos os atributos (prefixos e middlewares)
+        if (!empty($this->groupStack)) {
+            $parentGroup = end($this->groupStack);
+
+            if (isset($parentGroup['prefix']) && isset($attributes['prefix'])) {
+                $attributes['prefix'] = trim($parentGroup['prefix'], '/') . '/' . trim($attributes['prefix'], '/');
+            } elseif (isset($parentGroup['prefix'])) {
+                $attributes['prefix'] = $parentGroup['prefix'];
+            }
+
+            if (isset($parentGroup['middleware'])) {
+                $parentMiddlewares = is_array($parentGroup['middleware']) ? $parentGroup['middleware'] : [$parentGroup['middleware']];
+                $currentMiddlewares = isset($attributes['middleware']) ? (is_array($attributes['middleware']) ? $attributes['middleware'] : [$attributes['middleware']]) : [];
+                $attributes['middleware'] = array_merge($parentMiddlewares, $currentMiddlewares);
+            }
+        }
+
+        $this->groupStack[] = $attributes;
+
+        $callback($this);
+
+        array_pop($this->groupStack);
+    }
+
     protected function register(string $method, string $uri, array|Closure|callable $action): self
     {
+        // Aplica o prefixo do grupo, se existir
+        $groupMiddlewares = [];
+        if (!empty($this->groupStack)) {
+            $currentGroup = end($this->groupStack);
+
+            if (isset($currentGroup['prefix'])) {
+                $uri = '/' . trim($currentGroup['prefix'], '/') . '/' . trim($uri, '/');
+            }
+
+            if (isset($currentGroup['middleware'])) {
+                $groupMiddlewares = is_array($currentGroup['middleware']) ? $currentGroup['middleware'] : [$currentGroup['middleware']];
+            }
+        }
+
+        // Garante que a URI final comece com '/' e remova duplicadas
+        $uri = '/' . trim($uri, '/');
+        if ($uri === '/') {
+            $uri = '/';
+        }
+
         // Converte a URI que tem parâmetros como {id} para um padrão de Regex
         $uriPattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<\1>[a-zA-Z0-9_-]+)', $uri);
         // Escapa as barras e garante início e fim exatos
@@ -60,7 +106,7 @@ class Router
 
         $this->routes[$method][$uriPattern] = [
             'action' => $action,
-            'middlewares' => [] // Array vazio para receber os pipes depois
+            'middlewares' => $groupMiddlewares // Inicia com os middlewares do grupo
         ];
 
         // Guardamos as configs da última rota adicionada pra podermos encadear chamadas a ela

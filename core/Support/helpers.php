@@ -113,7 +113,7 @@ if (!function_exists('errors')) {
      */
     function errors(?string $field = null): mixed
     {
-        $errors = $GLOBALS['flash_errors'] ?? [];
+        $errors = session('_flash_errors', []);
         if ($field) {
             // Em caso de array (vários erros num campo), pegamos o primeiro pra facilitar a view
             $fieldErrors = $errors[$field] ?? [];
@@ -129,7 +129,7 @@ if (!function_exists('old')) {
      */
     function old(string $field, mixed $default = ''): mixed
     {
-        $oldInputs = $GLOBALS['flash_old'] ?? [];
+        $oldInputs = session('_flash_old', []);
         return $oldInputs[$field] ?? $default;
     }
 }
@@ -185,5 +185,46 @@ if (!function_exists('route')) {
             }
         }
         return '';
+    }
+}
+
+if (!function_exists('session')) {
+    /**
+     * Helper para interagir com a Sessão global.
+     * Retorna a instância se não passar key.
+     */
+    function session(?string $key = null, mixed $default = null): mixed
+    {
+        $session = request()->session();
+        if (!$session) {
+            // Em cenários isolados sem request injetado, buscaríamos do Container.
+            $session = app(\Core\Http\Session::class);
+        }
+
+        if ($key === null) {
+            return $session;
+        }
+
+        return $session->get($key, $default);
+    }
+}
+
+if (!function_exists('csrf_token')) {
+    /**
+     * Retorna o token CSRF atual.
+     */
+    function csrf_token(): string
+    {
+        return session()->token();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    /**
+     * Retorna o input hidden HTML pronto com o token CSRF.
+     */
+    function csrf_field(): string
+    {
+        return '<input type="hidden" name="_token" value="' . csrf_token() . '">';
     }
 }

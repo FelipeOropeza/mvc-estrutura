@@ -75,15 +75,15 @@ class Handler
         if ($exception instanceof \Core\Exceptions\ValidationException) {
             if ($isApi) {
                 return \Core\Http\Response::makeJson([
-                    'status' => 'error', 
-                    'message' => $exception->getMessage(), 
+                    'status' => 'error',
+                    'message' => $exception->getMessage(),
                     'errors' => $exception->errors
                 ], 422);
             } else {
-                $_SESSION['_flash_errors'] = $exception->errors;
-                $_SESSION['_flash_old'] = $exception->oldInput;
+                session()->flash('_flash_errors', $exception->errors);
+                session()->flash('_flash_old', $exception->oldInput);
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
-                
+
                 return \Core\Http\Response::makeRedirect($referer);
             }
         }
@@ -158,7 +158,7 @@ class Handler
             $content .= "<p style='color: #6b7280; font-size: 1.5rem; margin-top: 10px;'>Ocorreu um erro inesperado.</p>";
             $content .= "</div>";
         }
-        
+
         return new \Core\Http\Response($content, $code);
     }
 }
