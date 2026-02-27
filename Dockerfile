@@ -16,7 +16,8 @@ RUN install-php-extensions \
     intl \
     zip \
     bcmath \
-    opcache
+    opcache \
+    @composer
 
 # 4. TRUQUE MÁGICO PARA A RENDER:
 # A Render bloqueia binários que exigem "Linux Capabilities" avançados (como abrir portas 80/443).
@@ -30,6 +31,9 @@ WORKDIR /app
 
 # Copia tudo que está nesta pasta do Windows para o disco do Container
 COPY . /app
+
+# 5. Instala os pacotes do Composer dentro do container (já que ignoramos a pasta /vendor no .dockerignore)
+RUN composer install --no-dev --optimize-autoloader
 
 # (Opcional) Libera escrita na pasta 'storage' ou de logs caso o seu framework comece a salvar arquivos de fato
 # RUN chmod -R 777 /app/storage
