@@ -20,19 +20,27 @@ $app = require_once __DIR__ . '/../bootstrap/app.php';
 
 /*
 |--------------------------------------------------------------------------
-| Trate e Direcione o Request (Com Suporte a Worker Mode - FrankenPHP)
+| Trate e Direcione o Request
 |--------------------------------------------------------------------------
 |
 | A aplicação processa a requisição e devolve uma resposta. Se estivermos
-| rodando no modo Worker do FrankenPHP, o loop manterá a aplicação viva.
-$kernel = new \Core\Http\Kernel($app->get(\Core\Routing\Router::class));
-$request = \Core\Http\Request::capture();
-$response = $kernel->handle($request);
-
-/*
-|--------------------------------------------------------------------------
-| Entregue a Resposta ao Cliente Final
-|--------------------------------------------------------------------------
+| rodando sob o Docker (FrankenPHP Worker), mantemos a fita rodando rápida!
 */
 
-$response->send();
+$kernel = new \Core\Http\Kernel($app->get(\Core\Routing\Router::class));
+
+if (isset($_SERVER['FRANKENPHP_WORKER']) && function_exists('frankenphp_handle_request')) {
+    // Loop de Alta-Performance pelo Docker
+    $handler = static function () use ($kernel) {
+        $request = \Core\Http\Request::capture();
+        $response = $kernel->handle($request);
+        $response->send();
+    };
+    // Ignora o aviso de erro da IDE chamada de funcão dinamicamente (Extensão C)
+    call_user_func('frankenphp_handle_request', $handler);
+} else {
+    // Servidor normal (Apache, Nginx, ou FPM)
+    $request = \Core\Http\Request::capture();
+    $response = $kernel->handle($request);
+    $response->send();
+}
