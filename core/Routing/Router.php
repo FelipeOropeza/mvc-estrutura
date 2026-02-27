@@ -159,7 +159,8 @@ class Router
 
         // Lógica Global de Redirecionamento da Rota Raiz (Lida da Configuração)
         if ($uri === '/') {
-            $config = require __DIR__ . '/../../config/app.php';
+            $container = \Core\Support\Container::getInstance();
+            $config = $container->has('config') ? $container->get('config') : require __DIR__ . '/../../config/app.php';
             $defaultRoute = $config['app']['default_route'] ?? '/';
 
             if ($defaultRoute !== '/') {
@@ -206,10 +207,8 @@ class Router
             }; // Fim da destination / Action Controller
 
 
-            // Criamos o objeto global Request (que pode ser interceptado e modificado) 
-            $request = request();
-
-            // Cadastra a instância viva da Request no Container pra todo o framework poder Injetá-la
+            // A Requisição `$request` já foi passada instanciada pelo Kernel e Injetada no Dispatch
+            // Apenas garantimos de cadastrá-la no Container pra todo o framework poder Injetá-la
             \Core\Support\Container::getInstance()->instance(\Core\Http\Request::class, $request);
 
             // Criamos e executamos a Pipeline de Middlewares injetando no fim o Destination (Action)

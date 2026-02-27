@@ -47,6 +47,10 @@ class Application extends Container
         }
 
         $config = require $configPath;
+
+        // Cadastra as configurações inteiras no Container pra não precisarmos reler o disco nas requisições.
+        $this->instance('config', $config);
+
         $providers = $config['providers'] ?? [];
 
         foreach ($providers as $providerClass) {

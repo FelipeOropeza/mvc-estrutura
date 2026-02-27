@@ -50,18 +50,9 @@ class Kernel
      */
     protected function renderException(Request $request, \Throwable $e): Response
     {
-        // Aqui conectamos ao global Handler que você já tem
+        // Aqui conectamos ao global Handler para extrair um Objeto Response pronto
         $handler = new \Core\Exceptions\Handler();
 
-        // Vamos capturar a saída usando output buffering para transformar em Response
-        ob_start();
-        $handler->handleException($e);
-        $content = ob_get_clean();
-
-        // Obtém o código real de erro HTTP (ex: 404, 500) que o handler configurou com http_response_code
-        // Note: Se o Exception handler chamar exit() ainda vai matar, 
-        // mas idealmente ajustaremos o Handler pra não chamar exit no futuro.
-
-        return new Response((string) $content, http_response_code() ?: 500);
+        return $handler->renderException($e);
     }
 }

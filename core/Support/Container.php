@@ -69,6 +69,14 @@ class Container
     }
 
     /**
+     * Verifica se o container possui um registro ou instância pronta para a classe informada.
+     */
+    public function has(string $abstract): bool
+    {
+        return isset($this->bindings[$abstract]) || isset($this->instances[$abstract]);
+    }
+
+    /**
      * Resolve/Busca a classe mapeada pelo Container com base nas dependências
      */
     public function get(string $abstract): mixed

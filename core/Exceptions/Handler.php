@@ -40,47 +40,55 @@ class Handler
     }
 
     /**
-     * Captura qualquer exceção não tratada na aplicação.
+     * Captura qualquer exceção não tratada na aplicação formatada
+     * como Response e envia para a saída padrão (Fora de contexto Kernel).
      * 
      * @param Throwable $exception
      * @return void
      */
     public function handleException(Throwable $exception): void
     {
-        // Descobre o código de status HTTP (padrão 500)
+        $response = $this->renderException($exception);
+        $response->send();
+    }
+
+    /**
+     * Transforma qualquer Exceção em um Objeto Response Perfeito.
+     * Usado fortemente pelo Kernel HTTP para previnir crashes fatais em servidores assíncronos.
+     * 
+     * @param Throwable $exception
+     * @return \Core\Http\Response
+     */
+    public function renderException(Throwable $exception): \Core\Http\Response
+    {
+        // Descobre o código de status HTTP (padrão 500 se não reconhecido)
         $code = $exception->getCode();
         if ($code < 100 || $code >= 600) {
             $code = 500;
         }
-
-        http_response_code($code);
 
         // Verifica se quer retornar JSON (para API) ou HTML
         $isApi = (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
             (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') === 0);
 
+        // Se for um Erro de Validação Limpo, Redirecionamos ou Formatamos o DTO sem Logar como Alerta
         if ($exception instanceof \Core\Exceptions\ValidationException) {
             if ($isApi) {
-                http_response_code(422);
-                header('Content-Type: application/json');
-                echo json_encode(['status' => 'error', 'message' => $exception->getMessage(), 'errors' => $exception->errors]);
-                // return without exit -> ends handler gracefully
-                return;
+                return \Core\Http\Response::makeJson([
+                    'status' => 'error', 
+                    'message' => $exception->getMessage(), 
+                    'errors' => $exception->errors
+                ], 422);
             } else {
                 $_SESSION['_flash_errors'] = $exception->errors;
                 $_SESSION['_flash_old'] = $exception->oldInput;
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
-                header("Location: $referer");
-                return;
+                
+                return \Core\Http\Response::makeRedirect($referer);
             }
         }
 
-        // Descobre o código de status HTTP (padrão 500)
-        $code = $exception->getCode();
-        if ($code < 100 || $code >= 600) {
-            $code = 500;
-        }
-
+        // Se NÃO for validação, consideramos um ERRO DO SISTEMA! 
         // Salva silenciosamente a exceção real para os devs poderem espiar o log depois!
         logger()->error($exception->getMessage(), [
             'file' => $exception->getFile(),
@@ -90,31 +98,22 @@ class Handler
 
         // Busca se APP_DEBUG = true (por padrão é true se não encontrar)
         $debug = function_exists('env') ? env('APP_DEBUG', true) : true;
-
-        // String to boolean converstion
         if (is_string($debug)) {
             $debug = filter_var($debug, FILTER_VALIDATE_BOOLEAN);
         }
 
         if ($isApi) {
-            $this->renderJson($exception, (int) $code, (bool) $debug);
+            return $this->renderJson($exception, (int) $code, (bool) $debug);
         } else {
-            $this->renderHtml($exception, (int) $code, (bool) $debug);
+            return $this->renderHtml($exception, (int) $code, (bool) $debug);
         }
     }
 
     /**
-     * Retorna a resposta de erro em formato JSON.
-     * 
-     * @param Throwable $exception
-     * @param int $code
-     * @param bool $debug
-     * @return void
+     * Retorna a resposta de erro em formato JSON (Objeto Response).
      */
-    private function renderJson(Throwable $exception, int $code, bool $debug): void
+    private function renderJson(Throwable $exception, int $code, bool $debug): \Core\Http\Response
     {
-        header('Content-Type: application/json');
-
         $response = [
             'status' => 'error',
             'message' => $debug ? $exception->getMessage() : 'Erro interno no servidor.',
@@ -127,23 +126,17 @@ class Handler
             $response['trace'] = $exception->getTrace();
         }
 
-        echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        return;
+        return \Core\Http\Response::makeJson($response, $code);
     }
 
     /**
-     * Retorna a resposta de erro em formato HTML.
-     * 
-     * @param Throwable $exception
-     * @param int $code
-     * @param bool $debug
-     * @return void
+     * Retorna a resposta de erro em formato HTML (Objeto Response).
      */
-    private function renderHtml(Throwable $exception, int $code, bool $debug): void
+    private function renderHtml(Throwable $exception, int $code, bool $debug): \Core\Http\Response
     {
         if ($debug) {
             // Tela de erro detalhada para desenvolvimento
-            echo '<style>
+            $content = '<style>
                 body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; color: #111827; margin: 0; padding: 2rem; }
                 .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
                 h1 { color: #dc2626; margin-top: 0; font-size: 1.5rem; word-break: break-all; }
@@ -151,20 +144,21 @@ class Handler
                 .file { background: #f9fafb; padding: 1rem; border-radius: 4px; border-left: 4px solid #9ca3af; margin-bottom: 1rem; word-break: break-all; color: #4b5563;}
                 .trace { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.875rem; line-height: 1.5; }
             </style>';
-            echo '<div class="container">';
-            echo "<h1>" . get_class($exception) . "</h1>";
-            echo "<div class='meta'>Mensagem: " . htmlspecialchars($exception->getMessage()) . "</div>";
-            echo "<div class='file'><strong>Arquivo:</strong> " . $exception->getFile() . " <br><strong>Linha:</strong> " . $exception->getLine() . "</div>";
-            echo "<h3>Stack Trace:</h3>";
-            echo "<pre class='trace'>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>";
-            echo '</div>';
+            $content .= '<div class="container">';
+            $content .= "<h1>" . get_class($exception) . "</h1>";
+            $content .= "<div class='meta'>Mensagem: " . htmlspecialchars($exception->getMessage()) . "</div>";
+            $content .= "<div class='file'><strong>Arquivo:</strong> " . $exception->getFile() . " <br><strong>Linha:</strong> " . $exception->getLine() . "</div>";
+            $content .= "<h3>Stack Trace:</h3>";
+            $content .= "<pre class='trace'>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>";
+            $content .= '</div>';
         } else {
             // Tela genérica de erro para o usuário em Produção
-            echo "<div style='font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 100px 20px;'>";
-            echo "<h1 style='color: #374151; font-size: 6rem; margin: 0;'>$code</h1>";
-            echo "<p style='color: #6b7280; font-size: 1.5rem; margin-top: 10px;'>Ocorreu um erro inesperado.</p>";
-            echo "</div>";
+            $content = "<div style='font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 100px 20px;'>";
+            $content .= "<h1 style='color: #374151; font-size: 6rem; margin: 0;'>$code</h1>";
+            $content .= "<p style='color: #6b7280; font-size: 1.5rem; margin-top: 10px;'>Ocorreu um erro inesperado.</p>";
+            $content .= "</div>";
         }
-        return;
+        
+        return new \Core\Http\Response($content, $code);
     }
 }
