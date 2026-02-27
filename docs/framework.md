@@ -13,10 +13,10 @@ Um micro-framework PHP profissional, extremamente rápido, desenhado com arquite
 - **bootstrap**: Contém o arquivo `app.php` responsável por inicializar o Container de Serviços e registrar a ponte do backend.
 - **config**: Contém as configurações principais do aplicativo (`app.php`, `database.php`), incluindo a lista principal de **Providers** que devem ser ligados.
 - **core**: O motor interno do Framework separado por pacotes lógicos (Router, Http, Foundation, Providers, Exceptions, Support). É blindado via `.htaccess` para não vazar acesso na web!
-- **public**: O único diretório seguro para acesso direto via Web. Ele aponta para o `index.php` minimalista que engatilha o Framework de forma limpa.
+- **public**: O único diretório seguro para acesso direto via Web. Ele aponta para o `index.php` minimalista que engatilha o Framework de forma limpa, e está preparado para o **FrankenPHP Worker Mode**.
 - **storage/logs**: Onde seus logs internos (`app.log`) são escritos de forma segura quando há erros invisíveis em produção num deploy silencioso (`APP_DEBUG=false`).
-- **routes**: As definições de URLs da sua aplicação (`web.php`).
-- **server.php**: Roteador interno para desenvolvimento via `php -S localhost:8000 server.php` simulando a blindagem de proteção de pastas.
+- **routes**: As definições de URLs da sua aplicação (`web.php`). Suporta criação de **Grupos de Rotas** com prefixos e middlewares (`Route::group()`).
+- **Dockerfile** / **docker-compose.yml**: O ambiente em alta performance pré-compilado para Nuvem (Deploy em Render, AWS, etc) usando o núcleo oficial do Debian + pacote Web Server Go.
 
 ---
 
@@ -142,5 +142,20 @@ Estas funções vivem mapeadas internamente em `Core\Support\helpers.php` e agil
 - `logger()`: Grava uma mensagem no arquivo oculto `storage/logs/app.log` usando `logger()->info('Usuário conectou')`.
 - `request()`: Acessa os dados atuais (`$_POST`, `$_GET`, etc.) sanitizados através deste DTO global sem estado global sujo.
 - `response()`: Cria o DTO de Response HTTP com cabeçalhos apropriados.
-- `view('nome_arquivo', [])`: Renderiza um HTML final ou view mapeada da pasta `app/Views/`.
+- `session()`: Acessa e gerencia de forma limpa a classe nativa de Sessão. Use `session('nome')` para recuperar dados rápidos ou `session()->flash('info', 'Salvo')`.
+- `csrf_field()`: Gera automaticamente o `<input type="hidden">` de segurança contra interceptadores e falsificação de formulários.
+- `view('nome_arquivo', [])`: Renderiza um HTML final ou view mapeada da pasta `app/Views/`. 
 - `old('campo', 'padrao')` e `errors('campo')`: Recuperadores vitais de Sessão Flash para UI de Formulários.
+
+---
+### 🔒 Proteção Automática Anti-CSRF
+Toda e qualquer requisição de alteração de banco de dados do tipo `POST`, `PUT`, `PATCH` ou `DELETE` deve obrigatóriamente conter o token do usuário oculto, pois o Pipeline global do `Kernel.php` contém o *middleware* nativo de `VerifyCsrfToken::class`.
+
+No seu HTML do PHP, certifique-se de adicionar:
+```html
+<form action="/salvar" method="POST">
+    <?= csrf_field() ?>
+    <input type="text" name="nome">
+    <button>Confirmar</button>
+</form>
+```
