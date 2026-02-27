@@ -23,6 +23,8 @@ class Container
 
     /**
      * Retorna a instância global do Container (Singleton)
+     * 
+     * @return static
      */
     public static function getInstance(): self
     {
