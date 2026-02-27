@@ -18,6 +18,13 @@ RUN install-php-extensions \
     bcmath \
     opcache
 
+# 4. TRUQUE MÁGICO PARA A RENDER:
+# A Render bloqueia binários que exigem "Linux Capabilities" avançados (como abrir portas 80/443).
+# Como o Franken vem com isso de fábrica, a nuvem tomava susto e dava "Operation not permitted (126)".
+# Copiar e colar o arquivo remove os atributos de permissões extras e libera a execução 100% normal lá!
+RUN cp /usr/local/bin/frankenphp /usr/local/bin/frankenphp.tmp && \
+    mv /usr/local/bin/frankenphp.tmp /usr/local/bin/frankenphp
+
 # Define a pasta padrão de trabalho dentro do sistema virtual
 WORKDIR /app
 
