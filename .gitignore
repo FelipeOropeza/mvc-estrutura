@@ -3,3 +3,4 @@
 vendor/
 .agent/
 .env
+.cache/

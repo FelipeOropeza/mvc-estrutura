@@ -31,6 +31,11 @@ class Router
         return self::$instance;
     }
 
+    public function getRoutes(): array
+    {
+        return $this->routes;
+    }
+
     public function get(string $uri, array|Closure|callable $action): self
     {
         return $this->register('GET', $uri, $action);
@@ -214,22 +219,33 @@ class Router
             }
         }
 
-        // Procura se alguma rota registrada casa com a URL usando Regex
         $matchedRouteInfos = null;
         $params = [];
 
-        if (isset($this->routes[$method])) {
-            foreach ($this->routes[$method] as $pattern => $info) {
-                if (preg_match($pattern, $uri, $matches)) {
-                    $matchedRouteInfos = $info;
+        // Verifica cache de rotas compiladas
+        $cacheFile = __DIR__ . '/../../.cache/routes.php';
+        $routesToSearch = file_exists($cacheFile) ? require $cacheFile : $this->routes;
 
-                    // Filtra apenas os parametros nomeados (removendo os index numéricos do preg_match)
-                    foreach ($matches as $key => $value) {
-                        if (is_string($key)) {
-                            $params[$key] = $value;
+        if (isset($routesToSearch[$method])) {
+            // Tenta mapa direto de hash caso a URI não use variável (Fast O(1) lookup)
+            $staticPattern = '#^' . str_replace('/', '\/', $uri) . '$#';
+
+            if (isset($routesToSearch[$method][$staticPattern])) {
+                $matchedRouteInfos = $routesToSearch[$method][$staticPattern];
+            } else {
+                // Rota com variável dinâmica, usa regex fallback
+                foreach ($routesToSearch[$method] as $pattern => $info) {
+                    if (preg_match($pattern, $uri, $matches)) {
+                        $matchedRouteInfos = $info;
+
+                        // Filtra apenas os parametros nomeados (removendo os index numéricos do preg_match)
+                        foreach ($matches as $key => $value) {
+                            if (is_string($key)) {
+                                $params[$key] = $value;
+                            }
                         }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -243,12 +259,19 @@ class Router
             $destination = function (\Core\Http\Request $request) use ($action, $params) {
                 $container = \Core\Support\Container::getInstance();
 
+                // 1. Otimização em Cache: Se tiver 'factory', é uma Action Compilada pre-resolvida sem reflexion
+                if (is_array($action) && isset($action['factory']) && is_callable($action['factory'])) {
+                    $controllerInstance = $action['factory']();
+                    // Invoca os métodos utilizando Reflection leve apenas para parametros de injeção da rota
+                    return $container->call([$controllerInstance, $action['method']], $params);
+                }
+
                 // Se a ação já for um callable simples (Closure)
                 if (is_callable($action) && !is_array($action)) {
                     return call_user_func_array($action, array_values($params));
                 }
 
-                // O Action Controller com o Container da PSR-11 fazendo a Magica de Autowiring!
+                // O Action Controller puro
                 return $container->call($action, $params);
             }; // Fim da destination / Action Controller
 
