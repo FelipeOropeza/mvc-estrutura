@@ -16,11 +16,11 @@ class IsBool implements ValidationRule
             return null; // A obrigatoriedade é papel do #[Required]
         }
 
-        // Aceita '1', '0', 'true', 'false', boolean type
+        // Aceita '1', '0', 'true', 'false', boolean nativo do PHP e converte se for
         $filtered = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
         if ($filtered === null) {
-            return "O campo {$attribute} deve ser um valor booleano (verdadeiro, falso, 1, 0).";
+            return "O campo {$attribute} precisa ser exclusivamente verdadeiro ou falso.";
         }
 
         return null;

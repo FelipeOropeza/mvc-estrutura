@@ -10,13 +10,18 @@ use Core\Contracts\ValidationRule;
 #[Attribute]
 class IsFloat implements ValidationRule
 {
-    private ?float $min;
-    private ?float $max;
+    private int $precision;
+    private int $scale;
 
-    public function __construct(float $min = null, float $max = null)
+    /**
+     * @param int $precision Quantidade TOTAL de números na casa
+     * @param int $scale Quantidade de números nas casas DECIMAIS (após a vírgula/ponto)
+     * Ex: FLOAT/DECIMAL(5, 2) => Máximo 999.99
+     */
+    public function __construct(int $precision = 8, int $scale = 2)
     {
-        $this->min = $min;
-        $this->max = $max;
+        $this->precision = $precision;
+        $this->scale = $scale;
     }
 
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
@@ -25,20 +30,27 @@ class IsFloat implements ValidationRule
             return null; // A obrigatoriedade é papel do #[Required]
         }
 
-        if (filter_var($value, FILTER_VALIDATE_FLOAT) === false) {
-            return "O campo {$attribute} deve ser um número decimal (float/decimal) válido.";
+        // Se o valor contiver vírgula, trocamos por ponto p/ facilitar o PHP
+        $valStr = str_replace(',', '.', (string) $value);
+
+        if (!is_numeric($valStr)) {
+            return "O campo {$attribute} deve ser um número decimal válido.";
         }
 
-        $floatValue = (float) $value;
+        $parts = explode('.', ltrim($valStr, '-'));
+        $intPart = $parts[0] ?? '';
+        $decPart = $parts[1] ?? '';
 
-        if ($this->min !== null && $floatValue < $this->min) {
-            return "O campo {$attribute} não pode ser menor que {$this->min}.";
+        $maxIntDigits = $this->precision - $this->scale;
+
+        if (strlen($intPart) > $maxIntDigits) {
+            return "O campo {$attribute} não pode exceder {$maxIntDigits} dígitos inteiros.";
         }
 
-        if ($this->max !== null && $floatValue > $this->max) {
-            return "O campo {$attribute} não pode ser maior que {$this->max}.";
+        if (strlen($decPart) > $this->scale) {
+            return "O campo {$attribute} não pode ter mais que {$this->scale} casas decimais.";
         }
 
-        return null;
+        return null; // O campo é um float e respeita as regras (precisão e escala)
     }
 }
