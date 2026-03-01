@@ -10,7 +10,7 @@ use Core\Contracts\ValidationRule;
 #[Attribute]
 class Required implements ValidationRule
 {
-    public function validate(string $attribute, mixed $value): ?string
+    public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
         if ($value === null || trim((string)$value) === '') {
             return "O campo {$attribute} Ã© obrigatÃ³rio.";

@@ -40,7 +40,7 @@ class Validator
             foreach ($attributes as $attribute) {
                 // Instancia e Roda a regra de Validação (Required, Email, etc)
                 $rule = $attribute->newInstance();
-                $error = $rule->validate($name, $value);
+                $error = $rule->validate($name, $value, $inputData);
 
                 if ($error !== null) {
                     $this->errors[$name][] = $error;

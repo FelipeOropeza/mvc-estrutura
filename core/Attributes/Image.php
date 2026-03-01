@@ -24,7 +24,7 @@ class Image implements ValidationRule
         $this->allowedMimes = $mimes;
     }
 
-    public function validate(string $attribute, mixed $value): ?string
+    public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
         if ($value === null) {
             return null; // A obrigatoriedade é garantida pelo atributo #[Required]

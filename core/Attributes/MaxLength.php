@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Core\Attributes;
+
 use Attribute;
 use Core\Contracts\ValidationRule;
 
@@ -10,9 +11,12 @@ use Core\Contracts\ValidationRule;
 class MaxLength implements ValidationRule
 {
     private int $max;
-    public function __construct(int $max) { $this->max = $max; }
+    public function __construct(int $max)
+    {
+        $this->max = $max;
+    }
 
-    public function validate(string $attribute, mixed $value): ?string
+    public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
         if (mb_strlen((string)$value, 'UTF-8') > $this->max) {
             return "O campo {$attribute} precisa ter no máximo {$this->max} caracteres.";

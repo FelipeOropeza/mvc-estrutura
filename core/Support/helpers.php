@@ -106,6 +106,29 @@ if (!function_exists('validate')) {
     }
 }
 
+if (!function_exists('fail_validation')) {
+    /**
+     * Lança manualmente um erro de validação parando a requisição e retornando com os inputs preenchidos (old).
+     * 
+     * @param string|array $field Nome do campo (string) ou array de erros completo ['campo' => 'erro']
+     * @param string|null $message Mensagem de erro caso o $field seja apenas uma string
+     * @throws \Core\Exceptions\ValidationException
+     */
+    function fail_validation(string|array $field, ?string $message = null): void
+    {
+        $errors = is_array($field) ? $field : [$field => [$message]];
+
+        // Garante a formatação internal do ValidationException que espera arrays de strings
+        foreach ($errors as $k => $v) {
+            if (!is_array($v)) {
+                $errors[$k] = [$v];
+            }
+        }
+
+        throw new \Core\Exceptions\ValidationException($errors, request()->all());
+    }
+}
+
 if (!function_exists('errors')) {
     /**
      * Recupera erros de validação da sessão (para usar nas Views).

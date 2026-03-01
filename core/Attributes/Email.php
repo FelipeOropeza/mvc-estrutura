@@ -10,7 +10,7 @@ use Core\Contracts\ValidationRule;
 #[Attribute]
 class Email implements ValidationRule
 {
-    public function validate(string $attribute, mixed $value): ?string
+    public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
         if ($value !== null && trim((string)$value) !== '') {
             if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
