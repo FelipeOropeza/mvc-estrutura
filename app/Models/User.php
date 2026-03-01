@@ -7,6 +7,7 @@ use Core\Attributes\Required;
 use Core\Attributes\Email;
 use Core\Attributes\IsFloat;
 use Core\Attributes\Min;
+use Core\Attributes\Hash;
 
 class User extends Model
 {
@@ -24,6 +25,7 @@ class User extends Model
 
     #[Required]
     #[Min(8)]
+    #[Hash]
     public ?string $password = null;
 
     #[Required]
@@ -38,23 +40,4 @@ class User extends Model
 
     // 2. Os Timestamps (created_at) já vêm true por padrão da Model PAI!
     // public bool $timestamps = true;
-
-    // 3. Modificando Hooks (Gatilhos) para Encriptar a Senha sempre!
-    protected function beforeInsert(array $data): array
-    {
-        if (isset($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        }
-        return $data;
-    }
-
-    protected function beforeUpdate(array $data): array
-    {
-        // Só encrypta se o cara mandou atualizar a senha 
-        // e ela ainda não é um hash criptografado
-        if (isset($data['password']) && password_get_info($data['password'])['algoName'] === 'unknown') {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        }
-        return $data;
-    }
 }

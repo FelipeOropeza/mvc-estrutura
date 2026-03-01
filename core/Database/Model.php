@@ -116,7 +116,7 @@ abstract class Model
     public function insert(array $data): int
     {
         $data = $this->filterFillable($data);
-        $data = $this->beforeInsert($data);
+        $data = $this->applyMutators($data);
 
         if ($this->timestamps && !isset($data['created_at'])) {
             $now = date('Y-m-d H:i:s');
@@ -151,7 +151,7 @@ abstract class Model
     public function update(mixed $id, array $data): bool
     {
         $data = $this->filterFillable($data);
-        $data = $this->beforeUpdate($data);
+        $data = $this->applyMutators($data);
 
         if ($this->timestamps && !isset($data['updated_at'])) {
             $data['updated_at'] = date('Y-m-d H:i:s');
@@ -220,18 +220,27 @@ abstract class Model
     }
 
     /**
-     * Hook chamado ANTES de criar um registro novo no banco.
+     * Busca na Model atual por atributos `Core\Contracts\Mutator` e aplica as transformações.
      */
-    protected function beforeInsert(array $data): array
+    protected function applyMutators(array $data): array
     {
-        return $data;
-    }
+        $reflection = new \ReflectionClass($this);
+        $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
 
-    /**
-     * Hook chamado ANTES de atualizar um registro existente no banco.
-     */
-    protected function beforeUpdate(array $data): array
-    {
+        foreach ($properties as $property) {
+            $name = $property->getName();
+
+            // Só aplica as Mutações em propriedades que estão sendo preenchidas pra ir pro banco
+            if (array_key_exists($name, $data)) {
+                $attributes = $property->getAttributes(\Core\Contracts\Mutator::class, \ReflectionAttribute::IS_INSTANCEOF);
+
+                foreach ($attributes as $attribute) {
+                    $mutator = $attribute->newInstance();
+                    $data[$name] = $mutator->mutate($name, $data[$name]);
+                }
+            }
+        }
+
         return $data;
     }
 }
