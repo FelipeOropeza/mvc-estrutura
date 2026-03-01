@@ -21,8 +21,34 @@ class Request
         $this->post = $post;
         $this->server = $server;
         $this->cookies = $cookies;
-        $this->files = $files;
+        $this->files = $this->normalizeFiles($files);
         $this->content = $content;
+    }
+
+    /**
+     * Normaliza as submissões de $_FILES em objetos UploadedFile
+     */
+    protected function normalizeFiles(array $files): array
+    {
+        $normalized = [];
+
+        foreach ($files as $key => $file) {
+            // Ignorar arrays de arquivos multiplos no momento, suportar apenas single upload
+            if (isset($file['name'], $file['type'], $file['tmp_name'], $file['error'], $file['size']) && is_string($file['name'])) {
+                // Só empacota se realmente um arquivo foi enviado na request
+                if ($file['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $normalized[$key] = new UploadedFile(
+                        $file['tmp_name'],
+                        $file['name'],
+                        $file['type'],
+                        $file['error'],
+                        $file['size']
+                    );
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -38,7 +64,7 @@ class Request
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        return $this->post[$key] ?? $this->query[$key] ?? $default;
+        return $this->files[$key] ?? $this->post[$key] ?? $this->query[$key] ?? $default;
     }
 
     /**
@@ -51,11 +77,11 @@ class Request
         if (str_contains($contentType, 'application/json')) {
             $json = json_decode($this->content, true);
             if (is_array($json)) {
-                return $json;
+                return $json; // APIs não enviam $_FILES via JSON puro, então apenas retornamos o json
             }
         }
 
-        return array_merge($this->query, $this->post);
+        return array_merge($this->query, $this->post, $this->files);
     }
 
     /**
