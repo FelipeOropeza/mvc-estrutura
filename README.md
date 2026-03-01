@@ -10,8 +10,10 @@ Um esqueleto PHP puro, ultra-leve e focado em performance (Stateless). Construí
 * **Router Expressivo e Rápido**: Suporte a parâmetros dinâmicos na URL, **Grupos de Rotas** (com prefixos e middlewares aninhados) e Namespaces limpos.
 * **Docker & FrankenPHP Integrado**: Ambiente pronto para a nuvem (Render, AWS) e desenvolvedores. Utiliza a imagem oficial do FrankenPHP baseada em Debian operando com o cobiçado **Worker Mode** para performance extrema na casa dos milissegundos.
 * **Service Providers Lifecycle**: Motor flexível similar ao Laravel, permitindo construção modular de recursos através de classes simples no `config/app.php`.
+* **Database Avançado (ORM)**: Modelos trazem um `QueryBuilder` embutido para queries complexas fluidas, Suporte a Relacionamentos (`belongsTo`, `hasMany`), e Gatilhos de Mutação e Validação acoplados.
+* **Upload Seguro e Storage**: Abstração Orientada a Objetos robusta para manipulação e validação de `UploadedFile`.
 * **Segurança e Log de Falhas**: Exceções são silenciadas no arquivo `storage/logs/app.log` se o modo de debug estiver inativo (`APP_DEBUG=false`), blindando a visão do usuário final num Deploy de Produção.
-* **CLI (Forge)**: Uma ferramenta de console robusta e extensível para criar código pré-fabricado e rodar migrações.
+* **CLI (Forge)**: Uma ferramenta de console robusta e extensível para criar código pré-fabricado, regras customizadas e rodar migrações.
 
 ## Documentação
 
@@ -58,6 +60,8 @@ php forge make:model TabelaModel
 php forge make:view secao/nova-view
 php forge make:migration CreateUsersTable
 php forge make:middleware VerificarAcessoMiddleware
+php forge make:rule CpfValido
+php forge make:mutator LimpaCpf
 php forge migrate
 php forge setup:engine twig
 ```

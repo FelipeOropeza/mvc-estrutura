@@ -7,7 +7,9 @@ Um micro-framework PHP profissional, extremamente rápido, desenhado com arquite
 ## 1. Estrutura de Diretórios
 
 - **app/Controllers**: Aqui ficam seus Controladores, responsáveis por receber as requisições HTTP (`Core\Http\Request`) e orquestrar a lógica devolvendo uma `Response`.
-- **app/Models**: Classes que representam as tabelas do seu banco de dados. Atuam como "Active Record", carregando inclusive as regras de validação via Atributos (PHP 8).
+- **app/Models**: Classes que representam as tabelas do seu banco de dados. Atuam como "Active Record", carregando propriedades como Mass Assignment (`$fillable`), regras de validação via Atributos (PHP 8), e Relacionamentos entre tabelas.
+- **app/Mutators**: Classes (Atributos) dedicadas a interceptar e alterar dados limpos magicamente antes de irem pro Banco (ex: Criptografar senhas).
+- **app/Rules**: Classes (Atributos) dedicadas a executar regras de lógicas customizadas para validações avançadas (ex: Validação de CPF externo).
 - **app/Providers**: Onde moram os "Plugins" customizados da sua aplicação (`AppServiceProvider`). É o local para você configurar dependências e serviços antes das Rotas rodarem.
 - **app/Views**: Os arquivos de interface que serão renderizados para o usuário. Suporta PHP nativo ou Twig Engine.
 - **bootstrap**: Contém o arquivo `app.php` responsável por inicializar o Container de Serviços e registrar a ponte do backend.
@@ -50,6 +52,8 @@ php forge make:controller UsuarioController
 php forge make:model Produto
 php forge make:view produto/lista
 php forge make:middleware AuthMiddleware
+php forge make:rule CpfValido
+php forge make:mutator LimpaCpf
 ```
 
 E para mudar seu motor base para **Twig Engine** ao invés de PHP Puro de forma automatizada:
@@ -125,6 +129,15 @@ public function store()
 }
 ```
 
+### Validação Fora da Model (Manual em Controllers)
+Se você precisar validar apenas um campo avulso com lógicas do seu projeto, você pode usar a função global `fail_validation('campo', 'Mensagem')`. Ela interromperá a requisição exatamente igual à model e enviará o erro para o frontend.
+```php
+if (!$pagamentoEhValido) {
+    fail_validation('cartao', 'O limite foi recusado.');
+    // Ou passe um Array para multiplas mensagens: fail_validation(['cartao' => '...', 'cvv' => '...'])
+}
+```
+
 ### Recuperando Erros e Old Inputs na UI:
 Usando PHP Engine (`public/index.php` blindará as tags XSS automaticamente pra sua segurança):
 ```php
@@ -134,7 +147,69 @@ Usando PHP Engine (`public/index.php` blindará as tags XSS automaticamente pra 
 
 ---
 
-## 6. Helpers Globais Úteis
+## 6. Eloquent-style ORM (Database Avançado)
+
+A base de dados cresceu para abraçar a complexidade de sistemas robustos sem perder performance, incorporando um Query Builder fluente, Mutadores automáticos e Relacionamentos.
+
+### Proteção de Mass Assignment e Mutators
+Seu modelo deve sinalizar por padrão o que ele permite que venha livremente de um form via `$fillable`. Para higienização e mutações de dados pré-banco, você anexa atributos mágicos que farão o trabalho sujo silenciosamente (\`php forge make:mutator Hash\`).
+
+```php
+namespace App\Models;
+use App\Mutators\Hash;
+
+class User extends Model 
+{
+    protected array $fillable = ['nome', 'email', 'password'];
+    public bool $timestamps = true; // Injeta created_at e updated_at sozinho!
+    
+    // Altera a senha interceptando antes do INSERT ou UPDATE transparentemente 
+    #[Hash]
+    public ?string $password = null;
+}
+```
+
+### Consultas Customizadas Fluentes (Query Builder)
+Cansado de escrever SQL Manual? Encaminhe métodos fluidos.
+```php
+$produtos = (new Produto())->select('nome, preco')
+    ->where('ativo', '1')
+    ->where('preco', '>', 50)
+    ->orderBy('preco', 'DESC')
+    ->limit(10)
+    ->get(); // Retorna array de instâncias [Produto]
+
+$maisVelho = (new Usuario())->where('idade', '>', 50)->first(); // Retorna 1 Objeto
+```
+
+### Relacionamentos Simplificados e Joins
+Dando adeus ao INNER JOIN cansativo. Modele a arquitetura lógica:
+
+```php
+class Categoria extends Model {
+    public function produtos() {
+        return $this->hasMany(Produto::class, 'categoria_id');
+    }
+}
+
+class Produto extends Model {
+    public function categoria() {
+        return $this->belongsTo(Categoria::class, 'categoria_id');
+    }
+}
+
+// Controller:
+$cat = (new Categoria())->find(1);
+$produtosDestaCategoria = $cat->produtos(); // Traz todos! Magicamente!
+
+$primeiro = (new Produto())->find(1);
+echo $primeiro->categoria()->nome; // Devolve o dono do produto
+```
+Também é possível usar `$produto->join(...)` ou `$produto->leftJoin(...)` nativamente.
+
+---
+
+## 7. Helpers Globais Úteis
 
 Estas funções vivem mapeadas internamente em `Core\Support\helpers.php` e agilizam muita funcionalidade em qualquer pedaço do ecossistema:
 
