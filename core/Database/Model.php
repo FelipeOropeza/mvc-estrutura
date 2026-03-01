@@ -17,6 +17,12 @@ abstract class Model
     /** @var string Nome da chave primária */
     protected string $primaryKey = 'id';
 
+    /** @var array Lista de colunas seguras e permitidas para serem manipuladas em massa */
+    protected array $fillable = [];
+
+    /** @var bool Ativa/Desativa controle automático das colunas created_at e updated_at */
+    public bool $timestamps = true;
+
     public function __construct()
     {
         $this->db = Connection::getInstance();
@@ -109,6 +115,15 @@ abstract class Model
      */
     public function insert(array $data): int
     {
+        $data = $this->filterFillable($data);
+        $data = $this->beforeInsert($data);
+
+        if ($this->timestamps && !isset($data['created_at'])) {
+            $now = date('Y-m-d H:i:s');
+            $data['created_at'] = $now;
+            $data['updated_at'] = $now;
+        }
+
         $columns = implode(', ', array_keys($data));
         // Cria os placeholders (:nome, :email)
         $placeholders = ':' . implode(', :', array_keys($data));
@@ -135,6 +150,13 @@ abstract class Model
      */
     public function update(mixed $id, array $data): bool
     {
+        $data = $this->filterFillable($data);
+        $data = $this->beforeUpdate($data);
+
+        if ($this->timestamps && !isset($data['updated_at'])) {
+            $data['updated_at'] = date('Y-m-d H:i:s');
+        }
+
         $fields = [];
         foreach ($data as $key => $value) {
             $fields[] = "{$key} = :{$key}";
@@ -181,5 +203,35 @@ abstract class Model
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Filtra os dados de entrada usando o Mass Assignment (lista $fillable).
+     */
+    protected function filterFillable(array $data): array
+    {
+        // Se a classe não definiu o $fillable, por retrocompatibilidade a gente aceita tudo. 
+        // Idealmente futuramente podemos até lançar Exception se estiver vazio para forçar as boas práticas.
+        if (empty($this->fillable)) {
+            return $data;
+        }
+
+        return array_intersect_key($data, array_flip($this->fillable));
+    }
+
+    /**
+     * Hook chamado ANTES de criar um registro novo no banco.
+     */
+    protected function beforeInsert(array $data): array
+    {
+        return $data;
+    }
+
+    /**
+     * Hook chamado ANTES de atualizar um registro existente no banco.
+     */
+    protected function beforeUpdate(array $data): array
+    {
+        return $data;
     }
 }
