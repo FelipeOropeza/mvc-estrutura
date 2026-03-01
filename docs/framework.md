@@ -16,10 +16,15 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 8. [Upload de Arquivos](#8-upload-de-arquivos)
 9. [Views e Interface de Usuário (UI)](#9-views-e-interface-de-usuário-ui)
 10. [Injeção de Dependências e Service Providers](#10-injeção-de-dependências-e-service-providers)
+<<<<<<< HEAD
 11. [CLI (Forge Console) e Migrations](#11-cli-forge-console-e-migrations)
 12. [Helpers Globais Globais](#12-helpers-globais)
 13. [Tratamento de Exceções e Debug Bar](#13-tratamento-de-exceções-e-debug-bar)
 14. [Nuvem e o Foguete FrankenPHP](#14-nuvem-e-o-foguete-frankenphp)
+=======
+11. [CLI (Forge Console)](#11-cli-forge-console)
+12. [Helpers Globais Globais](#12-helpers-globais)
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
 
 ---
 
@@ -55,6 +60,7 @@ $router->get('/home', [PageController::class, 'index']);
 $router->post('/contato/enviar', [PageController::class, 'store']);
 ```
 
+<<<<<<< HEAD
 **Parâmetros Dinâmicos e Nomenclatura de Rota:**
 Você pode capturar informações na URL e batizar sua rota para facilitar a criação de Links na View de forma dinâmica e inquebrável caso a URL mude no futuro.
 ```php
@@ -70,6 +76,19 @@ public function show($id) {
 }
 ```
 
+=======
+**Parâmetros Dinâmicos:**
+Você pode capturar informações diretamente na URL.
+```php
+$router->get('/produto/{id}', [ProdutoController::class, 'show']);
+
+// No seu ProdutoController:
+public function show($id) {
+    echo "Pesquisando pelo produto de número: " . $id;
+}
+```
+
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
 **Grupos de Rotas e Middlewares Acoplados:**
 Ideal para painéis administrativos (Ex: exigir que toda a rota `/admin/...` passe pela validação de Login).
 ```php
@@ -373,7 +392,11 @@ public function store(Request $request) {
 
 Temos a view engatilhada a retornar PHP ou TWIG baseado no motor setado em `config/app.php`. 
 
+<<<<<<< HEAD
 Para renderizar (o core procura dentro de `app/Views/`):
+=======
+Para renderizar:
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
 ```php
 return view('produto/detalhes', [
     'nome' => 'Sabão em pó',
@@ -381,6 +404,7 @@ return view('produto/detalhes', [
 ]);
 ```
 
+<<<<<<< HEAD
 ### Layouts Principais (Master Page)
 A separação de Layouts evita que você repita `<head>` e Menus em todas as páginas. É totalmente suportado dependendo do "motor" ativo:
 * **Com Engine de PHP Puro (Padrão):** Você pode criar um arquivo `app/Views/layouts/app.php` e nas suas views filhas chamar `include __DIR__ . '/../layouts/app.php';`.
@@ -392,6 +416,8 @@ A separação de Layouts evita que você repita `<head>` e Menus em todas as pá
 {% endblock %}
 ```
 
+=======
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
 ### Retornando feedbacks e erros do Validate() na Interface
 O Framework mantém sessões invisíveis "Flash" que expiram e apagam no Reload seguinte da tela para lidar os formulários rejeitados.
 
@@ -423,7 +449,11 @@ Localizados em `app/Providers/`. São as Centrais de Distribuição de Conhecime
 
 ---
 
+<<<<<<< HEAD
 ## 11. CLI (Forge Console) e Migrations
+=======
+## 11. CLI (Forge Console)
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
 
 Escrever código na mão é amadorismo. O `php forge` é um gerador visual super útil acessível pelo prompt de comandos!
 
@@ -444,6 +474,7 @@ php forge make:mutator NomeDaSuaMutaçãoLimpeza # Pasta /Mutators
 
 # Compiladores Finais
 php forge setup:engine twig        # Migra o projeto entre Php/Twig como View padrão do Front   
+<<<<<<< HEAD
 php forge optimize                 # Escala pra Nuvem compilando configs em memória máxima    
 ```
 
@@ -459,6 +490,12 @@ Para rodar para o banco em definitivo:
 php forge migrate
 ```
 
+=======
+php forge migrate                  # Roda e executa as classes presentes da pasta Core.
+php forge optimize                 # Escala pra Nuvem compilando configs em memória máxima    
+```
+
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
 ---
 
 ## 12. Helpers Globais
@@ -471,6 +508,7 @@ Atalhos diretos da Programação para facilitar implementações cruciais.
 * `view()`: Chamada principal de Views (Ex: `view('painel/index', ...)` ).
 * `old('nome_do_campo')`: Recupera lógicas mal preenchidas.
 * `errors('nome_do_campo')`: Apresenta erros do Validator em tempo real na Interface da WEB.
+<<<<<<< HEAD
 * `route('nome_da_rota')`: Transforma um "Name" gerado no Web.php numa String de Domínio real com Query Params processados se necessário.
 
 ---
@@ -507,3 +545,5 @@ if (isset($_SERVER['FRANKENPHP_WORKER'])) {
 ```
 
 Isso significa que o banco de dados e os controllers só iniciam **uma única vez** (durante o Boot da Máquina no host) e ficam quentes esperando o usuário de braços abertos num Loop infinito em Memória RAM, baixando a casa de requisições do seu App de `~50ms` para insanos e absurdos **~2ms** na resposta final de Database! Desfrute desse salto de performance imbatível do PHP moderno!
+=======
+>>>>>>> 5d3c099c2237137b8b866d5d51b74af874ad9f09
