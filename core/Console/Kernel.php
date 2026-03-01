@@ -44,6 +44,12 @@ class Kernel
             case 'make:middleware':
                 $this->makeMiddleware($args);
                 break;
+            case 'make:rule':
+                $this->makeRule($args);
+                break;
+            case 'make:mutator':
+                $this->makeMutator($args);
+                break;
             case 'setup:engine':
                 $this->setupEngine($args);
                 break;
@@ -71,6 +77,8 @@ class Kernel
         echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
         echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados. Ex: CreateUsersTable\n";
         echo "  make:middleware <Nome>   Cria um novo Middleware de validação. Ex: AuthMiddleware\n";
+        echo "  make:rule <Nome>         Cria um atributo de Validação customizado. Ex: CpfValido\n";
+        echo "  make:mutator <Nome>      Cria um atributo de Mutação customizado. Ex: LimpaCpf\n";
         echo "  migrate                  Gera o Banco de Dados ausente (se possível) e roda as Migrations\n";
         echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
         echo "  optimize                 Compila as rotas e dependências para máxima performance\n";
@@ -277,6 +285,44 @@ class Kernel
 
         $content = $this->renderTemplate('middleware', ['{{name}}' => $name]);
         $this->createFile($path, $content, "Middleware '$name'");
+    }
+
+    private function makeRule(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome. Ex: make:rule CpfValido\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        $dir = __DIR__ . '/../../app/Rules';
+        $path = $dir . '/' . $name . '.php';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $content = $this->renderTemplate('rule', ['{{name}}' => $name]);
+        $this->createFile($path, $content, "Rule '$name'");
+    }
+
+    private function makeMutator(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome. Ex: make:mutator LimpaCpf\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        $dir = __DIR__ . '/../../app/Mutators';
+        $path = $dir . '/' . $name . '.php';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $content = $this->renderTemplate('mutator', ['{{name}}' => $name]);
+        $this->createFile($path, $content, "Mutator '$name'");
     }
 
     private function setupEngine(array $args): void

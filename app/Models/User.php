@@ -12,6 +12,7 @@ use Core\Attributes\Hash;
 class User extends Model
 {
     protected $table = 'users';
+    protected array $fillable = ['nome', 'email', 'password', 'saldo'];
 
     // Propriedades publicas mapeando as colunas da tabela "users"
     public ?int $id = null;
@@ -34,10 +35,4 @@ class User extends Model
 
     public ?string $created_at = null;
     public ?string $updated_at = null;
-
-    // 1. Proteção de Mass Assignment (Atribuição em Massa permitida)
-    protected array $fillable = ['nome', 'email', 'password', 'saldo'];
-
-    // 2. Os Timestamps (created_at) já vêm true por padrão da Model PAI!
-    // public bool $timestamps = true;
 }

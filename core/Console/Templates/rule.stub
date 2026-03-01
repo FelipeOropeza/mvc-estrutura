@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Rules;
+
+use Attribute;
+use Core\Contracts\ValidationRule;
+
+#[Attribute]
+class {{name}} implements ValidationRule
+{
+    public function validate(string $attribute, mixed $value, array $allData = []): ?string
+    {
+        // Se a pessoa não preencheu, o #[Required] que deve se encarregar de bloquear
+        if ($value === null || $value === '') {
+            return null; 
+        }
+
+        // TODO: Implemente a sua lógica customizada de verificação (DB, Regex, Algoritmo)
+        // if ($value !== 'regra-secreta') {
+        //     return "A validação falhou para o campo {$attribute}.";
+        // }
+
+        return null; // O teste passou
+    }
+}
