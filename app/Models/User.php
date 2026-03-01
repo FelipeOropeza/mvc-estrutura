@@ -32,4 +32,29 @@ class User extends Model
 
     public ?string $created_at = null;
     public ?string $updated_at = null;
+
+    // 1. Proteção de Mass Assignment (Atribuição em Massa permitida)
+    protected array $fillable = ['nome', 'email', 'password', 'saldo'];
+
+    // 2. Os Timestamps (created_at) já vêm true por padrão da Model PAI!
+    // public bool $timestamps = true;
+
+    // 3. Modificando Hooks (Gatilhos) para Encriptar a Senha sempre!
+    protected function beforeInsert(array $data): array
+    {
+        if (isset($data['password'])) {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+        return $data;
+    }
+
+    protected function beforeUpdate(array $data): array
+    {
+        // Só encrypta se o cara mandou atualizar a senha 
+        // e ela ainda não é um hash criptografado
+        if (isset($data['password']) && password_get_info($data['password'])['algoName'] === 'unknown') {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+        return $data;
+    }
 }
