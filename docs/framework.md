@@ -65,6 +65,8 @@ $router->get('/produto/{id}', [ProdutoController::class, 'show'])->name('produto
 ```
 
 // No seu ProdutoController:
+
+```php
 public function show($id) {
     echo "Pesquisando pelo produto de número: " . $id;
 }
