@@ -46,12 +46,9 @@ class Image implements ValidationRule
 
         // Tenta garantir que o MIME real é de Imagem usando as ferramentas internas do PHP
         $actualMime = $value->getClientMimeType();
-        if (function_exists('finfo_open')) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            if ($finfo) {
-                $actualMime = finfo_file($finfo, $value->getPathname());
-                finfo_close($finfo);
-            }
+        if (class_exists('\finfo')) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $actualMime = $finfo->file($value->getPathname());
         }
 
         // Valida Tipo de Mime Real da imagem
