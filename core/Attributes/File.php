@@ -13,15 +13,18 @@ class File implements ValidationRule
 {
     private int $maxSize;
     private array $mimes;
+    private ?string $message;
 
     /**
      * @param int $maxSize Tamanho máximo em bytes (ex: 2048 * 1024 para 2MB)
      * @param array $mimes Lista opcional de mimetypes válidos
+     * @param string|null $message Mensagem customizada
      */
-    public function __construct(int $maxSize = 2097152, array $mimes = [])
+    public function __construct(int $maxSize = 2097152, array $mimes = [], ?string $message = null)
     {
         $this->maxSize = $maxSize;
         $this->mimes = $mimes;
+        $this->message = $message;
     }
 
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
@@ -31,7 +34,7 @@ class File implements ValidationRule
         }
 
         if (!$value instanceof UploadedFile) {
-            return "O campo {$attribute} não é um arquivo válido.";
+            return $this->message ?? "O campo {$attribute} não é um arquivo válido.";
         }
 
         if (!$value->isValid()) {

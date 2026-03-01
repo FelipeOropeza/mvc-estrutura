@@ -10,10 +10,17 @@ use Core\Contracts\ValidationRule;
 #[Attribute]
 class Required implements ValidationRule
 {
+    private ?string $message;
+
+    public function __construct(?string $message = null)
+    {
+        $this->message = $message;
+    }
+
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
         if ($value === null || trim((string)$value) === '') {
-            return "O campo {$attribute} Ã© obrigatÃ³rio.";
+            return $this->message ?? "O campo {$attribute} é obrigatório.";
         }
         return null;
     }

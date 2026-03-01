@@ -11,13 +11,15 @@ use Core\Contracts\ValidationRule;
 class MatchField implements ValidationRule
 {
     private string $fieldToMatch;
+    private ?string $message;
 
     /**
      * @param string $fieldToMatch O nome do outro campo que este deve ser igual (ex: 'password')
      */
-    public function __construct(string $fieldToMatch)
+    public function __construct(string $fieldToMatch, ?string $message = null)
     {
         $this->fieldToMatch = $fieldToMatch;
+        $this->message = $message;
     }
 
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
@@ -30,7 +32,7 @@ class MatchField implements ValidationRule
         $otherFieldValue = $allData[$this->fieldToMatch] ?? null;
 
         if ($value !== $otherFieldValue) {
-            return "O campo {$attribute} não confere com o campo {$this->fieldToMatch}.";
+            return $this->message ?? "O campo {$attribute} não confere com o campo {$this->fieldToMatch}.";
         }
 
         return null;

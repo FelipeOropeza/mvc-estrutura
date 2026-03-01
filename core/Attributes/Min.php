@@ -11,10 +11,12 @@ use Core\Contracts\ValidationRule;
 class Min implements ValidationRule
 {
     private float|int $min;
+    private ?string $message;
 
-    public function __construct(float|int $min)
+    public function __construct(float|int $min, ?string $message = null)
     {
         $this->min = $min;
+        $this->message = $message;
     }
 
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
@@ -26,7 +28,7 @@ class Min implements ValidationRule
         // Se for um Input de Senha ou Texto normal
         if (is_string($value) && !is_numeric($value)) {
             if (mb_strlen($value, 'UTF-8') < $this->min) {
-                return "O campo {$attribute} precisa ter no mínimo {$this->min} caracteres.";
+                return $this->message ?? "O campo {$attribute} precisa ter no mínimo {$this->min} caracteres.";
             }
             return null;
         }
@@ -35,7 +37,7 @@ class Min implements ValidationRule
         if (is_numeric($value)) {
             $numValue = $value + 0; // cast magico para int ou float
             if ($numValue < $this->min) {
-                return "O valor do campo {$attribute} não pode ser menor que {$this->min}.";
+                return $this->message ?? "O valor do campo {$attribute} não pode ser menor que {$this->min}.";
             }
             return null;
         }
@@ -43,11 +45,11 @@ class Min implements ValidationRule
         // Se for Array ou Arquivo
         if (is_array($value)) {
             if (count($value) < $this->min) {
-                return "O campo {$attribute} precisa ter pelo menos {$this->min} itens.";
+                return $this->message ?? "O campo {$attribute} precisa ter pelo menos {$this->min} itens.";
             }
             return null;
         }
 
-        return "O campo {$attribute} possui um formato inválido para a restrição de mínimo.";
+        return $this->message ?? "O campo {$attribute} possui um formato inválido para a restrição de mínimo.";
     }
 }

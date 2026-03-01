@@ -10,6 +10,13 @@ use Core\Contracts\ValidationRule;
 #[Attribute]
 class IsBool implements ValidationRule
 {
+    private ?string $message;
+
+    public function __construct(?string $message = null)
+    {
+        $this->message = $message;
+    }
+
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
         if ($value === null || $value === '') {
@@ -20,7 +27,7 @@ class IsBool implements ValidationRule
         $filtered = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
         if ($filtered === null) {
-            return "O campo {$attribute} precisa ser exclusivamente verdadeiro ou falso.";
+            return $this->message ?? "O campo {$attribute} precisa ser exclusivamente verdadeiro ou falso.";
         }
 
         return null;

@@ -13,15 +13,18 @@ class Image implements ValidationRule
 {
     private int $maxSize;
     private array $allowedMimes;
+    private ?string $message;
 
     /**
      * @param int $maxSizeMB Tamanho máximo em Megabytes (padrão 2MB)
      * @param array $mimes Lista opcional de mimetypes da imagem suportados
+     * @param string|null $message Mensagem customizada de erro
      */
-    public function __construct(int $maxSizeMB = 2, array $mimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+    public function __construct(int $maxSizeMB = 2, array $mimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], ?string $message = null)
     {
         $this->maxSize = $maxSizeMB * 1024 * 1024;
         $this->allowedMimes = $mimes;
+        $this->message = $message;
     }
 
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
@@ -31,7 +34,7 @@ class Image implements ValidationRule
         }
 
         if (!$value instanceof UploadedFile) {
-            return "O campo {$attribute} não contém uma imagem ou arquivo válido.";
+            return $this->message ?? "O campo {$attribute} não contém uma imagem ou arquivo válido.";
         }
 
         if (!$value->isValid()) {
