@@ -85,9 +85,7 @@ abstract class Model
      */
     public function all(): array
     {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table}");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_CLASS, static::class);
+        return $this->newQuery()->get();
     }
 
     /**
@@ -203,6 +201,58 @@ abstract class Model
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Inicia o construtor de consultas avançadas (QueryBuilder).
+     */
+    public function newQuery(): QueryBuilder
+    {
+        return new QueryBuilder($this->db, $this->table, static::class);
+    }
+
+    /**
+     * Inicia uma verificação fluente na Tabela
+     * Ex: $produto->where('preco', '>', 50)->get();
+     */
+    public function where(string $column, string $operator, mixed $value = null): QueryBuilder
+    {
+        return $this->newQuery()->where($column, $operator, $value);
+    }
+
+    /**
+     * Inicia um JOIN fluente entre tabelas.
+     * Ex: $produto->join('categorias', 'categorias.id = produtos.categoria_id')->get();
+     */
+    public function join(string $table, string $condition, string $type = 'INNER'): QueryBuilder
+    {
+        return $this->newQuery()->join($table, $condition, $type);
+    }
+
+    /**
+     * Relacionamento 1:1 - Esta Model "Pertence A" Outra.
+     * Ex: $produto->categoria() >> belongsTo(Categoria::class, 'categoria_id')
+     */
+    protected function belongsTo(string $relatedClass, string $foreignKey, string $ownerKey = 'id'): ?object
+    {
+        $related = new $relatedClass();
+        return $related->where($ownerKey, '=', $this->$foreignKey)->first();
+    }
+
+    /**
+     * Relacionamento 1:N - Esta Model "Tem Várias" Outras.
+     * Ex: $categoria->produtos() >> hasMany(Produto::class, 'categoria_id')
+     */
+    protected function hasMany(string $relatedClass, string $foreignKey, string $localKey = 'id'): array
+    {
+        $related = new $relatedClass();
+
+        // Evita bugar buscando foreign key = null pra objetos recém instanciados sem dados salvos.
+        if ($this->$localKey === null) {
+            return [];
+        }
+
+        return $related->where($foreignKey, '=', $this->$localKey)->get();
     }
 
     /**
