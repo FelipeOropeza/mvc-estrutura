@@ -17,7 +17,7 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 9. [Views e Interface de Usuário (UI)](#9-views-e-interface-de-usuário-ui)
 10. [Injeção de Dependências e Service Providers](#10-injeção-de-dependências-e-service-providers)
 11. [CLI (Forge Console) e Migrations](#11-cli-forge-console-e-migrations)
-12. [Helpers Globais Globais](#12-helpers-globais)
+12. [Helpers Globais](#12-helpers-globais)
 13. [Tratamento de Exceções e Debug Bar](#13-tratamento-de-exceções-e-debug-bar)
 14. [Nuvem e o Foguete FrankenPHP](#14-nuvem-e-o-foguete-frankenphp)
 
@@ -284,7 +284,7 @@ Caso a validação não sirva pra banco de dados (exemplo, processar Cartão na 
 $pagou = $pagarMe->transacionar($cartao);
 if (!$pagou) {
     fail_validation('cartao', 'Limite Recusado pelo seu Banco.');
-    // Isso cancela a roda, reflete na variavel de sessao e devolve na interface a mensagem "Limite..".
+    // Isso cancela a rota, reflete na variável de sessão e devolve na interface a mensagem "Limite..".
 }
 ```
 
@@ -349,7 +349,7 @@ class AuthMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        // Tem sessão aberta? Se não, barra os invasores redirecionando para a pagina de login
+        // Tem sessão aberta? Se não, barra os invasores redirecionando para a página de login
         if (!session()->get('usuario_id')) {
             return Response::makeRedirect('/login');
         }
@@ -358,6 +358,21 @@ class AuthMiddleware
         return $next($request);
     }
 }
+```
+
+### Configuração de Middlewares (Apelidos e Grupos)
+No arquivo `config/middleware.php`, nós gerimos como o sistema injeta ou agrupa filtros ao redor de rotas.
+* **globais:** Rodam em todas as rotas (Como Iniciador de Sessões e tratamento CORS).
+* **aliases:** Exemplo: Associar a string `'auth'` à classe `AuthMiddleware::class`. Isso permite chamar na rota: `->middleware('auth')`.
+* **groups:** Agrupar middlewares para blocos de rotas parecidas (ex: `web` para Views HTML contendo proteção CSRF, ou `api` para Endpoints).
+
+Exemplo de uso na Rota (com array ou apelidos):
+```php
+// Com String Alias (apelido) configurado em config/middleware.php
+Route::get('/painel', [PainelController::class, 'index'])->middleware('auth');
+
+// Com Arrays de classes:
+Route::get('/seguro', [SafeController::class, 'index'])->middleware([\App\Middleware\AuthMiddleware::class]);
 ```
 
 ### Proteção Nativa (CSRF Forms)
@@ -451,7 +466,7 @@ Na sua view Filha (`app/Views/home.php`):
 ```
 
 ### Variáveis Compartilhadas (Globais)
-Se você precisa que uma variável (Ex: `$usuarioLogado` ou `$configuracoesDoSite`) esteja disponível mágicamente em TODAS as views e layouts sem ter que passar array por array em todo Controller, use o método `share` no seu `AppServiceProvider`:
+Se você precisa que uma variável (Ex: `$usuarioLogado` ou `$configuracoesDoSite`) esteja disponível magicamente em TODAS as views e layouts sem ter que passar array por array em todo Controller, use o método `share` no seu `AppServiceProvider`:
 ```php
 \Core\View\PhpEngine::share('usuarioLogado', session()->get('user_name'));
 ```
@@ -463,7 +478,7 @@ O Framework mantém sessões invisíveis "Flash" que expiram e apagam no Reload 
 <form method="POST" action="/submeter">
     <?= csrf_field() ?>
     
-    <!-- Mantenha o que o cara digitou usando old() se ele errou algo e foi redirecionado pra ca dnv -->
+    <!-- Mantenha o que o usuário preencheu usando old() caso ele erre algo e seja redirecionado para cá novamente -->
     <input type="text" name="email" value="<?= old('email') ?>">
     
     <!-- Mostre O ERRO mágico do #[Email('..')] de sua Model abaixo do Campo usando o errors()! -->
@@ -475,7 +490,7 @@ O Framework mantém sessões invisíveis "Flash" que expiram e apagam no Reload 
 
 ## 10. Injeção de Dependências e Service Providers
 
-O motor MVC local é super alimentado, possuindo um Inversor de Controle e Container Integrados. Isso significa que, em seus controllers e configurações, você nunca precisará mais construir `$conexao = new PDO...` na mão usando Singletons sujos pelo disco.
+O motor MVC local é super alimentado, possuindo suporte a Inversão de Controle e Container Integrados. Isso significa que, em seus controllers e configurações, você nunca precisará mais construir `$conexao = new PDO...` na mão usando Singletons sujos pelo disco.
 
 Para utilizar uma Conexão do seu Banco de Dados já instanciada magicamente pelo núcleo:
 ```php
@@ -531,7 +546,7 @@ Atalhos diretos da Programação para facilitar implementações cruciais.
 * `app()`: Devolve a base de Container.
 * `logger()->info("Salvo com sucesso")`: Uma forma maravilhosa de ler ocorrências sem atrapalhar e avisar o usuário que teve Exceção. Vai silenciado ao arquivo `/storage/logs/`.
 * `request()`: Abstrai toda a URL da Web que o usuário navegante acessou e todos seus Headers Seguros.
-* `session()`: Lê variaveis que transitam pela RAM do Framework até sua View. Use `session()->flash('success', 'Cadastrado')`.
+* `session()`: Lê variáveis que transitam pela RAM do Framework até sua View. Use `session()->flash('success', 'Cadastrado')`.
 * `view()`: Chamada principal de Views (Ex: `view('painel/index', ...)` ).
 * `old('nome_do_campo')`: Recupera lógicas mal preenchidas.
 * `errors('nome_do_campo')`: Apresenta erros do Validator em tempo real na Interface da WEB.

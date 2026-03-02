@@ -92,6 +92,15 @@ class Response
     }
 
     /**
+     * Fabricante Estático para redirecionar de volta (referer)
+     */
+    public static function makeRedirectBack(int $status = 302): self
+    {
+        $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/';
+        return new self('', $status, ['Location' => $referer]);
+    }
+
+    /**
      * Fabricante Estático para JSON sem emitir de imediato
      */
     public static function makeJson(array|object $data, int $status = 200): self
