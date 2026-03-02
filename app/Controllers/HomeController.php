@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use Core\Http\Controller;
+use Core\Attributes\Route\Get;
 use App\Services\MeuPrimeiroService;
 
 class HomeController extends Controller
@@ -17,6 +18,7 @@ class HomeController extends Controller
         $this->meuService = $meuService;
     }
 
+    #[Get('/home')]
     public function index()
     {
         // Usamos o service injetado

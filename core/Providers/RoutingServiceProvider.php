@@ -6,6 +6,7 @@ namespace Core\Providers;
 
 use Core\Support\ServiceProvider;
 use Core\Routing\Router;
+use Core\Routing\AttributeRouteScanner;
 
 class RoutingServiceProvider extends ServiceProvider
 {
@@ -30,10 +31,21 @@ class RoutingServiceProvider extends ServiceProvider
         $router = $this->app->get(Router::class);
 
         $basePath = $this->app->get('path.base');
+        $cacheFile = $basePath . '/.cache/routes.php';
 
-        if (file_exists($basePath . '/routes/web.php')) {
-            // "Injeta" a váriavel $router que o web.php espera ler!
-            require $basePath . '/routes/web.php';
+        if (file_exists($cacheFile)) {
+            // Carrega rotas cacheadas em memória, evitando Reflection e Scans
+            $router->setRoutes(require $cacheFile);
+        } else {
+            // Carrega o arquivo padrão de rotas web.php se existir
+            if (file_exists($basePath . '/routes/web.php')) {
+                // "Injeta" a váriavel $router que o web.php espera ler!
+                require $basePath . '/routes/web.php';
+            }
+
+            // Escaneia a pasta app/Controllers buscando rotas com PHP Attributes
+            $scanner = new AttributeRouteScanner();
+            $scanner->scan($router, $basePath . '/app/Controllers', 'App\\Controllers\\');
         }
     }
 }

@@ -8,4 +8,4 @@ use App\Controllers\HomeController;
 // ROTAS DE APLICAÇÃO (WEB / HTML)
 // ==========================================
 
-$router->get('/home', [HomeController::class , 'index']);
+// A Rota /home não está mais aqui, ela foi movida para atributos no HomeController!

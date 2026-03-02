@@ -36,6 +36,13 @@ class Router
         return $this->routes;
     }
 
+
+    public function setRoutes(array $routes): self
+    {
+        $this->routes = $routes;
+        return $this;
+    }
+
     public function get(string $uri, array|Closure|callable $action): self
     {
         return $this->register('GET', $uri, $action);
@@ -222,9 +229,7 @@ class Router
         $matchedRouteInfos = null;
         $params = [];
 
-        // Verifica cache de rotas compiladas
-        $cacheFile = __DIR__ . '/../../.cache/routes.php';
-        $routesToSearch = file_exists($cacheFile) ? require $cacheFile : $this->routes;
+        $routesToSearch = $this->routes;
 
         if (isset($routesToSearch[$method])) {
             // Tenta mapa direto de hash caso a URI não use variável (Fast O(1) lookup)

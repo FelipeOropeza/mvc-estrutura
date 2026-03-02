@@ -401,6 +401,10 @@ class Kernel
         // Importa as rotas; o arquivo web.php espera a variável $router no escopo global
         require_once $routesPath;
 
+        // Escaneia a pasta app/Controllers buscando attributes
+        $scanner = new \Core\Routing\AttributeRouteScanner();
+        $scanner->scan($router, realpath(__DIR__ . '/../../app/Controllers'), 'App\\Controllers\\');
+
         $compiler = new \Core\Routing\RouteCompiler();
         $compiledCode = $compiler->compile($router);
 
