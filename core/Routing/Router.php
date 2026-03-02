@@ -280,11 +280,28 @@ class Router
             // Apenas garantimos de cadastrá-la no Container pra todo o framework poder Injetá-la
             \Core\Support\Container::getInstance()->instance(\Core\Http\Request::class, $request);
 
+            // Resolve Middlewares usando Aliases do config/middleware.php
+            $container = \Core\Support\Container::getInstance();
+            $config = $container->has('config') ? $container->get('config') : [];
+            $aliases = $config['middleware']['aliases'] ?? [];
+            $groups = $config['middleware']['groups'] ?? [];
+
+            $resolvedMiddlewares = [];
+            foreach ($routeMiddlewares as $middleware) {
+                if (isset($groups[$middleware])) {
+                    foreach ($groups[$middleware] as $groupMiddleware) {
+                        $resolvedMiddlewares[] = $aliases[$groupMiddleware] ?? $groupMiddleware;
+                    }
+                } else {
+                    $resolvedMiddlewares[] = $aliases[$middleware] ?? $middleware;
+                }
+            }
+
             // Criamos e executamos a Pipeline de Middlewares injetando no fim o Destination (Action)
             $pipeline = new \Core\Http\Pipeline();
             $result = $pipeline
                 ->send($request)
-                ->through($routeMiddlewares)
+                ->through($resolvedMiddlewares)
                 ->then($destination);
 
             // Garante que o retorno seja sempre um objeto Core\Http\Response

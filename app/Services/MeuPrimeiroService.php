@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Services;
+
+class MeuPrimeiroService
+{
+    /**
+     * Você pode injetar repositórios, bancos de dados ou outros services
+     * no construtor. O Container os resolverá automaticamente.
+     */
+    public function __construct()
+    {
+        // $this->repository = $repository;
+    }
+
+    /**
+     * Exemplo de método de negócio
+     */
+    public function execute()
+    {
+        // Regras de negócio aqui...
+        return true;
+    }
+}

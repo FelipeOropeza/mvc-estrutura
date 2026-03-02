@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +11,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -21,6 +22,7 @@
             justify-content: center;
             margin: 0;
         }
+
         .welcome-card {
             background: #ffffff;
             border-radius: 1.5rem;
@@ -29,13 +31,22 @@
             max-width: 500px;
             width: 90%;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             animation: slideUp 0.5s ease-out;
         }
+
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .icon-container {
             width: 64px;
             height: 64px;
@@ -48,6 +59,7 @@
             font-size: 2rem;
             margin: 0 auto 1.25rem;
         }
+
         h1 {
             font-weight: 800;
             color: #0f172a;
@@ -55,12 +67,14 @@
             font-size: 1.75rem;
             margin-bottom: 0.75rem;
         }
+
         p {
             color: #64748b;
             font-size: 1rem;
             line-height: 1.5;
             margin-bottom: 1.5rem;
         }
+
         .code-block {
             background: #f1f5f9;
             color: #334155;
@@ -71,6 +85,7 @@
             margin-bottom: 2rem;
             border: 1px solid #e2e8f0;
         }
+
         .btn-custom {
             background-color: #4f46e5;
             color: white;
@@ -83,23 +98,27 @@
             align-items: center;
             gap: 0.5rem;
         }
+
         .btn-custom:hover {
             background-color: #4338ca;
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
+
         .btn-outline {
             background-color: transparent;
             color: #4f46e5;
             border: 2px solid #4f46e5;
             padding: 0.75rem 1.75rem;
         }
+
         .btn-outline:hover {
             background-color: rgba(79, 70, 229, 0.05);
             color: #4f46e5;
             box-shadow: none;
         }
+
         .version {
             margin-top: 2rem;
             font-size: 0.85rem;
@@ -107,15 +126,16 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="welcome-card">
         <div class="icon-container">
             <i class="bi bi-box-seam"></i>
         </div>
-        
+
         <h1> <?= $title ?? 'Bem-vindo ao MVC!' ?> </h1>
-        
+
         <p>
             Você instalou o seu esqueleto PHP com sucesso. Comece construindo algo incrível utilizando rotas expressivas,
             validação limpa e a velocidade que você merece.
@@ -126,7 +146,13 @@
                 Olá, <?= htmlspecialchars($name) ?>! Os dados do Controller estão chegando com sucesso.
             </div>
         <?php endif; ?>
-        
+
+        <?php if (isset($status) && $status === true): ?>
+            <div class="alert alert-info bg-info bg-opacity-10 border-0 text-info fw-medium mb-4">
+                <i class="bi bi-magic pe-2"></i><strong>Injeção de Dependências</strong> funcionando perfeitamente via Service Layer!
+            </div>
+        <?php endif; ?>
+
         <div class="code-block">
             Para começar, edite este arquivo em:<br>
             <strong class="text-primary">app/Views/home.php</strong>
@@ -140,11 +166,12 @@
                 <i class="bi bi-book"></i> Documentação
             </a>
         </div>
-        
+
         <div class="version">
             MVC Framework v1.0.0 &bull; Baseado em PHP >= 8.2
         </div>
     </div>
 
 </body>
+
 </html>

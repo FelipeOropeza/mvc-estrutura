@@ -102,11 +102,32 @@ class Handler
             $debug = filter_var($debug, FILTER_VALIDATE_BOOLEAN);
         }
 
-        if ($isApi) {
+        $isCli = php_sapi_name() === 'cli' || php_sapi_name() === 'phpdbg';
+
+        if ($isCli) {
+            return $this->renderCli($exception, (int) $code, (bool) $debug);
+        } elseif ($isApi) {
             return $this->renderJson($exception, (int) $code, (bool) $debug);
         } else {
             return $this->renderHtml($exception, (int) $code, (bool) $debug);
         }
+    }
+
+    /**
+     * Retorna a resposta de erro renderizada para o Terminal (CLI) de forma limpa.
+     */
+    private function renderCli(Throwable $exception, int $code, bool $debug): \Core\Http\Response
+    {
+        if ($debug) {
+            $content = "\n\033[41m\033[97m ERRO \033[0m " . get_class($exception) . "\n";
+            $content .= "\n\033[31mMensagem:\033[0m " . $exception->getMessage() . "\n";
+            $content .= "\033[33mArquivo:\033[0m " . $exception->getFile() . ":" . $exception->getLine() . "\n";
+            $content .= "\nStack Trace:\n" . $exception->getTraceAsString() . "\n\n";
+        } else {
+            $content = "\n\033[41m\033[97m ERRO \033[0m Ocorreu um erro inesperado ($code).\n\n";
+        }
+
+        return new \Core\Http\Response($content, $code);
     }
 
     /**

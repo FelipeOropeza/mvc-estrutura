@@ -28,7 +28,7 @@ class Schema
 
         // Vamos logar para checarmos o SQL gerado:
         echo "Gerando Tabela: {$table} \n";
-        echo $sql . "\n\n";
+        // log silencioso
     }
 
     /**
@@ -41,6 +41,6 @@ class Schema
         // Executa limpeza:
         Connection::getInstance()->exec($sql);
 
-        echo "Excluindo: \n" . $sql . "\n";
+        echo "Excluindo: {$table} \n";
     }
 }

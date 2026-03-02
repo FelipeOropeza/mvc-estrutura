@@ -25,7 +25,7 @@ class Blueprint
 
     public function string(string $name, int $length = 255): ColumnDefinition
     {
-        return $this->addColumn($name, 'VARCHAR', $length);
+        return $this->addColumn($name, 'VARCHAR', (string)$length);
     }
 
     public function text(string $name): ColumnDefinition
@@ -40,12 +40,12 @@ class Blueprint
 
     public function decimal(string $name, int $precision = 8, int $scale = 2): ColumnDefinition
     {
-        return $this->addColumn($name, 'DECIMAL', "$precision,$scale");
+        return $this->addColumn($name, 'DECIMAL', (string)$precision . ',' . (string)$scale);
     }
 
     public function boolean(string $name): ColumnDefinition
     {
-        return $this->addColumn($name, 'TINYINT', 1);
+        return $this->addColumn($name, 'TINYINT', '1');
     }
 
     public function timestamp(string $name): ColumnDefinition

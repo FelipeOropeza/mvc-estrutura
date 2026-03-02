@@ -10,17 +10,28 @@ class Kernel
 {
     protected Router $router;
 
-    /**
-     * Middlewares globais que rodam em toda requisição, antes de descobrir a rota.
-     */
-    protected array $globalMiddlewares = [
-        \Core\Http\Middleware\StartSession::class,
-        // \App\Http\Middlewares\HandleCors::class,
-    ];
-
     public function __construct(Router $router)
     {
         $this->router = $router;
+    }
+
+    /**
+     * Retorna os Middlewares globais lendo das configurações.
+     */
+    protected function getGlobalMiddlewares(): array
+    {
+        $container = \Core\Support\Container::getInstance();
+        $config = $container->has('config') ? $container->get('config') : [];
+
+        // Puxa do arquivo config/middleware.php se existir, senão usa o padrão
+        if (isset($config['middleware']['global'])) {
+            return $config['middleware']['global'];
+        }
+
+        // Fallback padrão se não tiver config
+        return [
+            \Core\Http\Middleware\StartSession::class,
+        ];
     }
 
     /**
@@ -36,7 +47,7 @@ class Kernel
             $pipeline = new Pipeline();
             $response = $pipeline
                 ->send($request)
-                ->through($this->globalMiddlewares)
+                ->through($this->getGlobalMiddlewares())
                 ->then(fn($req) => $this->router->dispatch($req));
 
             return $response;

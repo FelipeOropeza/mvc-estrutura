@@ -36,17 +36,33 @@ class Application extends Container
     }
 
     /**
-     * Carrega as configurações dos providers listados no 'config/app.php'
+     * Carrega as configurações dos providers e carrega todos os arquivos de configuração.
      */
     public function registerConfiguredProviders(): void
     {
-        $configPath = $this->get('path.config') . '/app.php';
+        $configPath = $this->get('path.config');
+        $config = [];
 
-        if (!file_exists($configPath)) {
-            return;
+        // Lê todos os arquivos PHP do diretório de config
+        if (is_dir($configPath)) {
+            $files = glob($configPath . '/*.php');
+            foreach ($files as $file) {
+                $key = basename($file, '.php');
+                $config[$key] = require $file;
+            }
         }
 
-        $config = require $configPath;
+        // Para retrocompatibilidade de coisas que buscam direto os dados da app
+        if (isset($config['app']['providers'])) {
+            $config['providers'] = $config['app']['providers'];
+        }
+
+        // Mas a estrutura legado também deixava as chaves do app puras no array pai, vamos fundi-las
+        if (isset($config['app'])) {
+            $config = array_merge($config, $config['app']);
+            // Mas re-atribui 'app' pra não perder a subarray
+            $config['app'] = require $configPath . '/app.php';
+        }
 
         // Cadastra as configurações inteiras no Container pra não precisarmos reler o disco nas requisições.
         $this->instance('config', $config);

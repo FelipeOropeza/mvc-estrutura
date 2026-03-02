@@ -38,6 +38,9 @@ class Kernel
             case 'make:model':
                 $this->makeModel($args);
                 break;
+            case 'make:service':
+                $this->makeService($args);
+                break;
             case 'make:view':
                 $this->makeView($args);
                 break;
@@ -75,6 +78,7 @@ class Kernel
         echo "  make:controller <Nome>   Cria um novo Controller\n";
         echo "  make:model <Nome>        Cria um novo Model\n";
         echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
+        echo "  make:service <Nome>      Cria um novo Service de regra de negócio para injetar. Ex: UserService\n";
         echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados. Ex: CreateUsersTable\n";
         echo "  make:middleware <Nome>   Cria um novo Middleware de validação. Ex: AuthMiddleware\n";
         echo "  make:rule <Nome>         Cria um atributo de Validação customizado. Ex: CpfValido\n";
@@ -159,6 +163,8 @@ class Kernel
         }
 
         $files = scandir($dir);
+        // Garante a ordenação alfabética (que equivale a cronológica devido ao formato Y_m_d_His)
+        sort($files);
         $ranAny = false;
 
         // Obs: Em um framework complexo haveria uma tabela `migrations` no BD pra não rodar duas vezes o que já rodou.
@@ -231,6 +237,29 @@ class Kernel
 
         $content = $this->renderTemplate('model', ['{{name}}' => $name]);
         $this->createFile($path, $content, "Model '$name'");
+    }
+
+    private function makeService(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome. Ex: make:service UsuarioService\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        if (!str_ends_with($name, 'Service')) {
+            $name .= 'Service';
+        }
+
+        $dir = $this->config['paths']['services'] ?? __DIR__ . '/../../app/Services';
+        $path = $dir . '/' . $name . '.php';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $content = $this->renderTemplate('service', ['{{name}}' => $name]);
+        $this->createFile($path, $content, "Service '$name'");
     }
 
     private function makeView(array $args): void

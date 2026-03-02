@@ -11,7 +11,7 @@ use Core\Attributes\Hash;
 
 class User extends Model
 {
-    protected $table = 'users';
+    protected ?string $table = 'users';
     protected array $fillable = ['nome', 'email', 'password', 'saldo'];
 
     // Propriedades publicas mapeando as colunas da tabela "users"
