@@ -67,7 +67,7 @@ class AttributeRouteScanner
                     $uri = isset($routeArgs[0]) ? strval($routeArgs[0]) : '/';
 
                     // Registra a rota
-                    $router->{$httpMethod === 'GET' ? 'get' : strtolower($httpMethod)}($uri, [$className, $method->getName()]);
+                    $router->{strtolower($httpMethod)}($uri, [$className, $method->getName()]);
                     $routeAdded = true;
                 }
             }

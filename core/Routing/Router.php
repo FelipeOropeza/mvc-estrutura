@@ -63,6 +63,11 @@ class Router
         return $this->register('DELETE', $uri, $action);
     }
 
+    public function patch(string $uri, array|Closure|callable $action): self
+    {
+        return $this->register('PATCH', $uri, $action);
+    }
+
     public function group(array $attributes, Closure $callback): void
     {
         // Se já estamos dentro de um grupo, mesclamos os atributos (prefixos e middlewares)
@@ -201,6 +206,8 @@ class Router
 
     public function dispatch(\Core\Http\Request $request): \Core\Http\Response
     {
+        $container = \Core\Support\Container::getInstance();
+
         $uri = parse_url($request->server['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $method = $request->server['REQUEST_METHOD'] ?? 'GET';
 
@@ -217,7 +224,6 @@ class Router
 
         // Lógica Global de Redirecionamento da Rota Raiz (Lida da Configuração)
         if ($uri === '/') {
-            $container = \Core\Support\Container::getInstance();
             $config = $container->has('config') ? $container->get('config') : require __DIR__ . '/../../config/app.php';
             $defaultRoute = $config['app']['default_route'] ?? '/';
 
@@ -261,9 +267,7 @@ class Router
 
             // Vamos construir a destinação final (O Action/Controller sendo invocado)
             // Esse é o centro absoluto da cebola
-            $destination = function (\Core\Http\Request $request) use ($action, $params) {
-                $container = \Core\Support\Container::getInstance();
-
+            $destination = function (\Core\Http\Request $request) use ($action, $params, $container) {
                 // 1. Otimização em Cache: Se tiver 'factory', é uma Action Compilada pre-resolvida sem reflexion
                 if (is_array($action) && isset($action['factory']) && is_callable($action['factory'])) {
                     $controllerInstance = $action['factory']();
@@ -283,10 +287,9 @@ class Router
 
             // A Requisição `$request` já foi passada instanciada pelo Kernel e Injetada no Dispatch
             // Apenas garantimos de cadastrá-la no Container pra todo o framework poder Injetá-la
-            \Core\Support\Container::getInstance()->instance(\Core\Http\Request::class, $request);
+            $container->instance(\Core\Http\Request::class, $request);
 
             // Resolve Middlewares usando Aliases do config/middleware.php
-            $container = \Core\Support\Container::getInstance();
             $config = $container->has('config') ? $container->get('config') : [];
             $aliases = $config['middleware']['aliases'] ?? [];
             $groups = $config['middleware']['groups'] ?? [];
