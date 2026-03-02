@@ -41,28 +41,56 @@ O framework segue uma separação lógica e profissional de pastas:
 - **`routes/`**: Define as URLs e Grupos de URLs disponíveis no seu App (`web.php`).
 - **`storage/logs/`**: Logs de erros escondidos (`app.log`) ocorridos em Produção.
 
----
-
 ## 2. Roteamento Avançado
 
-As rotas ficam no arquivo `routes/web.php`. Nelas, declaramos a URL e qual Controller deve assumir esse acesso.
+As rotas ficam no arquivo `routes/web.php`. Nelas, declaramos a URL e qual Controller deve assumir esse acesso. Você pode usar tanto a variável `$router` quanto a Facade estática `Route`.
 
 **Rotas Básicas:**
 ```php
-use App\Controllers\PageController;
+use App\Controllers\HomeController;
+use Core\Routing\Route;
 
-$router->get('/home', [PageController::class, 'index']);
-$router->post('/contato/enviar', [PageController::class, 'store']);
+// Usando a Facade Route (Recomendado/Laravel Style)
+Route::get('/', [HomeController::class, 'index']);
+Route::post('/contato/enviar', [HomeController::class, 'store']);
+
+// Ou usando a instância do $router
+$router->get('/sobre', [PageController::class, 'about']);
 ```
 
 **Parâmetros Dinâmicos e Nomenclatura de Rota:**
 Você pode capturar informações na URL e batizar sua rota para facilitar a criação de Links na View de forma dinâmica e inquebrável caso a URL mude no futuro.
 ```php
-$router->get('/produto/{id}', [ProdutoController::class, 'show'])->name('produto.detalhe');
+Route::get('/produto/{id}', [ProdutoController::class, 'show'])->name('produto.detalhe');
 
 // Na sua view (se usar a Engine nativa Twig/PHP compatível com o Helper):
-// <a href="<?= route('produto.detalhe', ['id' => 5]) ?>"> ...
+// <a href="<?= route('produto.detalhe', ['id' => 5]) ?>"> Detalhes </a>
 ```
+
+### 2.1 Roteamento via Atributos (PHP 8+)
+O framework suporta a definição de rotas diretamente nos métodos dos Controllers através de Atributos. Isso ajuda a manter a lógica e a rota no mesmo lugar.
+
+**Exemplo no Controller:**
+```php
+namespace App\Controllers;
+
+use Core\Attributes\Route\Get;
+use Core\Attributes\Route\Post;
+use Core\Attributes\Route\Middleware;
+
+class ProdutoController {
+    #[Get('/produtos')]
+    public function index() { ... }
+
+    #[Get('/produto/{id}')]
+    #[Middleware(AuthMiddleware::class)]
+    public function show($id) { ... }
+}
+```
+
+> [!TIP]
+> Quando usar Atributos, você não precisa registrar a rota no `web.php`. O framework faz um scanner automático da pasta `app/Controllers`.
+
 
 // No seu ProdutoController:
 
@@ -75,11 +103,12 @@ public function show($id) {
 **Grupos de Rotas e Middlewares Acoplados:**
 Ideal para painéis administrativos (Ex: exigir que toda a rota `/admin/...` passe pela validação de Login).
 ```php
-$router->group('/admin', [AuthMiddleware::class], function($router) {
-    $router->get('/dashboard', [AdminController::class, 'painel']);
-    $router->get('/usuarios', [AdminController::class, 'listaDeUsuarios']);
+Route::group(['prefix' => '/admin', 'middleware' => [AuthMiddleware::class]], function() {
+    Route::get('/dashboard', [AdminController::class, 'index']);
+    Route::get('/usuarios', [AdminController::class, 'users']);
 });
 ```
+
 
 ---
 
