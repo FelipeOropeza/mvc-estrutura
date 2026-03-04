@@ -34,30 +34,37 @@ Para criar um novo bloco cronológico pro banco:
 php forge make:migration CreateUsersTable
 ```
 
-A Migration utilizará nossa classe interna conectada ao Database de alta performance, utilizando a biblioteca PDO da base.
+A Migration utilizará nossa classe interna conectada ao Database de alta performance, utilizando um poderoso Schema Builder orientado a objetos.
+
 Exemplo de Escrita no Scaffold:
 ```php
 <?php
 
+use Core\Database\Schema\Schema;
+use Core\Database\Schema\Blueprint;
+
 class CreateUsersTable
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        $db = \Core\Database\Connection::getInstance();
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) NOT NULL UNIQUE,
-                senha VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ");
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('nome');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->timestamps(); // Cria as colunas created_at e updated_at mágicas
+        });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        $db = \Core\Database\Connection::getInstance();
-        $db->exec("DROP TABLE IF EXISTS usuarios");
+        Schema::dropIfExists('users');
     }
 }
 ```
