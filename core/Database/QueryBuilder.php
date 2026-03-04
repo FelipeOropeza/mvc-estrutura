@@ -18,6 +18,7 @@ class QueryBuilder
     protected string $selects = '*';
     protected ?int $limit = null;
     protected string $orderBy = '';
+    protected array $with = [];
 
     public function __construct(PDO $db, string $table, string $class)
     {
@@ -41,6 +42,32 @@ class QueryBuilder
     public function leftJoin(string $table, string $condition): self
     {
         return $this->join($table, $condition, 'LEFT');
+    }
+
+    public function with(string|array $relations): self
+    {
+        $this->with = is_array($relations) ? $relations : func_get_args();
+        return $this;
+    }
+
+    public function whereIn(string $column, array $values): self
+    {
+        if (empty($values)) {
+            $this->wheres[] = "1 = 0";
+            return $this;
+        }
+
+        $placeholders = [];
+        foreach ($values as $index => $value) {
+            $paramName = str_replace('.', '_', $column) . '_in_' . count($this->params) . '_' . $index;
+            $placeholders[] = ":$paramName";
+            $this->params[$paramName] = $value;
+        }
+
+        $phStr = implode(', ', $placeholders);
+        $this->wheres[] = "$column IN ($phStr)";
+
+        return $this;
     }
 
     public function where(string $column, string $operator, mixed $value = null): self
@@ -97,7 +124,13 @@ class QueryBuilder
         $stmt = $this->db->prepare($sql);
         $stmt->execute($this->params);
 
-        return $stmt->fetchAll(PDO::FETCH_CLASS, $this->class);
+        $results = $stmt->fetchAll(PDO::FETCH_CLASS, $this->class);
+
+        if (!empty($results) && !empty($this->with)) {
+            $results = $this->eagerLoadRelations($results);
+        }
+
+        return $results;
     }
 
     /**
@@ -108,5 +141,69 @@ class QueryBuilder
         $this->limit(1);
         $results = $this->get();
         return $results[0] ?? null;
+    }
+
+    protected function eagerLoadRelations(array $models): array
+    {
+        $first = $models[0];
+
+        foreach ($this->with as $relationMethod) {
+            if (!method_exists($first, $relationMethod)) {
+                continue;
+            }
+
+            $def = $first->getRelationDefinition($relationMethod);
+            if (!$def instanceof RelationDefinition) {
+                continue;
+            }
+
+            if ($def->type === 'belongsTo') {
+                $ids = [];
+                foreach ($models as $m) {
+                    $val = $m->{$def->foreignKey};
+                    if ($val !== null && !in_array($val, $ids)) {
+                        $ids[] = $val;
+                    }
+                }
+
+                if (empty($ids)) continue;
+
+                $relatedModels = (new $def->relatedClass())->whereIn($def->localKey, $ids)->get();
+
+                $dictionary = [];
+                foreach ($relatedModels as $r) {
+                    $dictionary[$r->{$def->localKey}] = $r;
+                }
+
+                foreach ($models as $m) {
+                    $val = $m->{$def->foreignKey};
+                    $m->setRelation($relationMethod, $dictionary[$val] ?? null);
+                }
+            } elseif ($def->type === 'hasMany') {
+                $ids = [];
+                foreach ($models as $m) {
+                    $val = $m->{$def->localKey};
+                    if ($val !== null && !in_array($val, $ids)) {
+                        $ids[] = $val;
+                    }
+                }
+
+                if (empty($ids)) continue;
+
+                $relatedModels = (new $def->relatedClass())->whereIn($def->foreignKey, $ids)->get();
+
+                $dictionary = [];
+                foreach ($relatedModels as $r) {
+                    $dictionary[$r->{$def->foreignKey}][] = $r;
+                }
+
+                foreach ($models as $m) {
+                    $val = $m->{$def->localKey};
+                    $m->setRelation($relationMethod, $dictionary[$val] ?? []);
+                }
+            }
+        }
+
+        return $models;
     }
 }

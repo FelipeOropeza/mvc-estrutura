@@ -152,8 +152,37 @@ class Kernel
             exit(1);
         }
 
-        // Agora sim a gente roda as criações na Schema
-        // As Facades `Schema` la dentro chamarão o Connection real.
+        // Conexão com o banco de dados da aplicação para gerenciar a tabela de migrations
+        $pdoApp = null;
+        try {
+            if ($driver === 'mysql') {
+                $dsnApp = "mysql:host={$dbConfig['host']};port={$dbConfig['port']};dbname={$dbConfig['database']}";
+                $pdoApp = new \PDO($dsnApp, $dbConfig['username'], $dbConfig['password']);
+                $pdoApp->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+                // Criar a tabela migrations se não existir
+                $pdoApp->exec("CREATE TABLE IF NOT EXISTS `migrations` (
+                    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    `migration` VARCHAR(255) NOT NULL,
+                    `batch` INT NOT NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET={$dbConfig['charset']} COLLATE=utf8mb4_unicode_ci;");
+            }
+        } catch (\PDOException $e) {
+            echo "Erro Crítico ao conectar no banco de dados da aplicação.\n";
+            echo "Detalhe: " . $e->getMessage() . "\n";
+            exit(1);
+        }
+
+        // Buscar as migrations já rodadas
+        $ranMigrations = [];
+        $nextBatch = 1;
+        if ($pdoApp) {
+            $stmt = $pdoApp->query("SELECT migration FROM migrations");
+            $ranMigrations = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+            $stmtBatch = $pdoApp->query("SELECT MAX(batch) FROM migrations");
+            $nextBatch = ((int) $stmtBatch->fetchColumn()) + 1;
+        }
 
         $dir = $this->config['paths']['migrations'] ?? __DIR__ . '/../../database/migrations';
 
@@ -167,11 +196,13 @@ class Kernel
         sort($files);
         $ranAny = false;
 
-        // Obs: Em um framework complexo haveria uma tabela `migrations` no BD pra não rodar duas vezes o que já rodou.
-        // Como isso é a base em desenvolvimento, vamos rodar tudo.
-
         foreach ($files as $file) {
             if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            // Se a migration já foi rodada, pular
+            if (in_array($file, $ranMigrations)) {
                 continue;
             }
 
@@ -184,12 +215,25 @@ class Kernel
             if ($className && is_file($path)) {
                 require_once $path;
 
+                // Suportar classes com namespace
+                $namespacedClass = "\\App\\Database\\Migrations\\$className";
+                if (class_exists($namespacedClass)) {
+                    $className = $namespacedClass;
+                }
+
                 if (class_exists($className)) {
                     $migration = new $className();
 
                     if (method_exists($migration, 'up')) {
-                        echo "\n[INFO] Rodando: $className\n";
+                        echo "\n[INFO] Rodando: $file\n";
                         $migration->up();
+                        
+                        // Registra no banco
+                        if ($pdoApp) {
+                            $stmtInsert = $pdoApp->prepare("INSERT INTO migrations (migration, batch) VALUES (?, ?)");
+                            $stmtInsert->execute([$file, $nextBatch]);
+                        }
+                        
                         $ranAny = true;
                     }
                 }
@@ -197,7 +241,7 @@ class Kernel
         }
 
         if (!$ranAny) {
-            echo "Nenhuma Migration encontrada para rodar.\n";
+            echo "Nenhuma Migration pendente encontrada para rodar.\n";
         } else {
             echo "\n✅ Todas as migrations concluídas com sucesso.\n";
         }

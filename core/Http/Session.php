@@ -9,9 +9,30 @@ class Session
     public function start(): void
     {
         if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-            // Em ambientes Long-Running (como FrankenPHP), a sessão PHP nativa pode causar lock e gargalo.
-            // Para o longo prazo, o ideal é usar sessões baseadas em Array ou Cache/Redis (implementando SessionHandlerInterface).
-            // Por enquanto, usaremos a nativa, mas garantindo que só inicie se não houver um erro grave.
+            // Em ambientes Long-Running (como FrankenPHP), a sessão PHP nativa usa I/O block travando requests.
+            // Para resolver, habilitamos nosso Custom Session Handler desprovido do native locked read/writes.
+            $driver = function_exists('env') ? env('SESSION_DRIVER', 'file') : 'file';
+
+            if ($driver === 'redis') {
+                $host = function_exists('env') ? env('REDIS_HOST', '127.0.0.1') : '127.0.0.1';
+                $port = function_exists('env') ? env('REDIS_PORT', 6379) : 6379;
+                $password = function_exists('env') ? env('REDIS_PASSWORD', '') : '';
+
+                $handler = new \Core\Http\Session\RedisSessionHandler($host, (int) $port, $password);
+            } else {
+                // Arquivo livre sem trava de concorrência massiva
+                $path = __DIR__ . '/../../storage/framework/sessions';
+                $handler = new \Core\Http\Session\FileSessionHandler($path);
+            }
+
+            // Avisa o PHP para usar nossaclasse como guardiã de $_SESSION
+            session_set_save_handler($handler, true);
+
+            // Garante que o PHP não faça garbage collection bagunçado nos discos se não for driver de arquivo nativo.
+            if ($driver === 'redis') {
+                ini_set('session.gc_probability', '0'); // O Redis lida com o TTL (setex) por conta própria
+            }
+
             session_start();
         }
     }

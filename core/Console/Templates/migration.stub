@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Database\Migrations;
+
 use Core\Database\Schema\Schema;
 use Core\Database\Schema\Blueprint;
 

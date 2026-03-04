@@ -34,16 +34,60 @@ abstract class Model
         }
     }
 
+    /** @var array Guarda os relacionamentos do Eager Loading */
+    protected array $loadedRelations = [];
+
+    /** @var bool Flag para inspecionar método e obter a definição, usado pelo Eager Loading */
+    public bool $relationDefinitionMode = false;
+
     /**
-     * Métodos Mágicos para getters/setters dinâmicos
-     * Isso permite chamar $user->nome mesmo que 'nome' não esteja declarado publicamente.
+     * Métodos Mágicos para getters dinâmicos
      * 
      * @param string $name
      * @return mixed
      */
     public function __get(string $name): mixed
     {
+        // Se a propriedade é padrão do model
+        if (property_exists($this, $name)) {
+            return $this->$name;
+        }
+
+        // Se o eager loading já carregou, retorna
+        if (array_key_exists($name, $this->loadedRelations)) {
+            return $this->loadedRelations[$name];
+        }
+
+        // Se existe um método com este nome, invoca (Lazy Loading de relações como $user->pedidos)
+        if (method_exists($this, $name)) {
+            $relationResult = $this->$name();
+            // Apenas para ter certeza que não estamos pegando o Definition
+            if (!($relationResult instanceof RelationDefinition)) {
+                $this->loadedRelations[$name] = $relationResult;
+                return $relationResult;
+            }
+        }
+
         return $this->$name ?? null;
+    }
+
+    public function setRelation(string $name, mixed $value): void
+    {
+        $this->loadedRelations[$name] = $value;
+    }
+
+    public function getRelationDefinition(string $method): ?RelationDefinition
+    {
+        if (!method_exists($this, $method)) {
+            return null;
+        }
+
+        $this->relationDefinitionMode = true;
+        // Chama o método para interceptar os parâmetros e retornar a Definição
+        $def = $this->$method();
+        $this->relationDefinitionMode = false;
+
+        return $def instanceof RelationDefinition ? $def : null;
     }
 
     /**
@@ -230,11 +274,24 @@ abstract class Model
     }
 
     /**
+     * Inicia uma verificação fluente IN na Tabela
+     * Ex: $produto->whereIn('id', [1,2,3])->get();
+     */
+    public function whereIn(string $column, array $values): QueryBuilder
+    {
+        return $this->newQuery()->whereIn($column, $values);
+    }
+
+    /**
      * Relacionamento 1:1 - Esta Model "Pertence A" Outra.
      * Ex: $produto->categoria() >> belongsTo(Categoria::class, 'categoria_id')
      */
-    protected function belongsTo(string $relatedClass, string $foreignKey, string $ownerKey = 'id'): ?object
+    protected function belongsTo(string $relatedClass, string $foreignKey, string $ownerKey = 'id'): mixed
     {
+        if ($this->relationDefinitionMode) {
+            return new RelationDefinition('belongsTo', $relatedClass, $foreignKey, $ownerKey);
+        }
+
         $related = new $relatedClass();
         return $related->where($ownerKey, '=', $this->$foreignKey)->first();
     }
@@ -243,8 +300,12 @@ abstract class Model
      * Relacionamento 1:N - Esta Model "Tem Várias" Outras.
      * Ex: $categoria->produtos() >> hasMany(Produto::class, 'categoria_id')
      */
-    protected function hasMany(string $relatedClass, string $foreignKey, string $localKey = 'id'): array
+    protected function hasMany(string $relatedClass, string $foreignKey, string $localKey = 'id'): mixed
     {
+        if ($this->relationDefinitionMode) {
+            return new RelationDefinition('hasMany', $relatedClass, $foreignKey, $localKey);
+        }
+
         $related = new $relatedClass();
 
         // Evita bugar buscando foreign key = null pra objetos recém instanciados sem dados salvos.
