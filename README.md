@@ -42,8 +42,19 @@ composer install
 composer run post-create-project-cmd
 ```
 
-### Iniciando o Servidor Local Seguro:
-Uma vez que o projeto esteja instanciado, inicie o servidor interno:
+### Método 3: Via Docker (Alta Performance com FrankenPHP)
+O projeto já conta com o poderoso ambiente Docker pré-configurado. Se você possui o Docker instalado e quer máxima performance, basta levantar os containers, e ele montará automaticamente o PHP8 com o Worker Mode:
+
+```bash
+docker-compose up -d --build
+```
+
+Acesse `http://localhost:8000` no seu navegador. O Servidor FrankenPHP gerenciará nativamente a aplicação!
+
+---
+
+### Iniciando o Servidor Local Seguro (Modo Tradicional via PHP CLI):
+Se não for usar o Docker, uma vez que o projeto esteja instanciado, inicie o servidor interno:
 ```bash
 composer start
 ```
