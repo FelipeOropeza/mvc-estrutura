@@ -518,6 +518,17 @@ class Kernel
             echo "✅ DTO: RegisterDTO criado.\n";
         }
 
+        // 2.5 Service
+        $serviceDir = $this->config['paths']['services'] ?? $baseDir . '/app/Services';
+        if (!is_dir($serviceDir)) mkdir($serviceDir, 0777, true);
+
+        $authServicePath = $serviceDir . '/AuthService.php';
+        if (!file_exists($authServicePath)) {
+            $code = file_get_contents("$authTemplatesDir/auth_service.stub");
+            file_put_contents($authServicePath, $code);
+            echo "✅ Service: AuthService criado.\n";
+        }
+
         // 3. Model
         $modelDir = $this->config['paths']['models'] ?? $baseDir . '/app/Models';
         if (!is_dir($modelDir)) mkdir($modelDir, 0777, true);

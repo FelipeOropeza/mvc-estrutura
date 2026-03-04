@@ -56,11 +56,8 @@ if (!function_exists('request')) {
      */
     function request(): Request
     {
-        static $request = null;
-        if ($request === null) {
-            $request = new Request();
-        }
-        return $request;
+        // No Worker Mode, a Request é rotativa. Buscamos sempre a instância mais fresca do Container
+        return app(Request::class);
     }
 }
 
@@ -70,17 +67,7 @@ if (!function_exists('view')) {
      */
     function view(string $viewName, array $data = []): mixed
     {
-        $config = require __DIR__ . '/../../config/app.php';
-        $viewPath = $config['paths']['views'];
-        $engineType = $config['app']['view_engine'] ?? 'php';
-
-        if ($engineType === 'twig') {
-            $engine = new \Core\View\TwigEngine($viewPath);
-        } else {
-            $engine = new \Core\View\PhpEngine($viewPath);
-        }
-
-        return $engine->render($viewName, $data);
+        return app(\Core\View\EngineInterface::class)->render($viewName, $data);
     }
 }
 

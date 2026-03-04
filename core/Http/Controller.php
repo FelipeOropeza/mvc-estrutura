@@ -14,20 +14,12 @@ abstract class Controller
 
     public function __construct()
     {
-        $config = require __DIR__ . '/../../config/app.php';
-
-        $viewPath = $config['paths']['views'];
-        $engineType = $config['app']['view_engine'] ?? 'php';
-
-        if ($engineType === 'twig') {
-            $this->engine = new TwigEngine($viewPath);
-        } else {
-            $this->engine = new PhpEngine($viewPath);
-        }
+        $this->engine = app(EngineInterface::class);
     }
 
     protected function view(string $view, array $data = []): void
     {
+        // Usa Singleton do container - Otimizado para Worker Mode sem I/O de disco
         $this->engine->render($view, $data);
     }
 }

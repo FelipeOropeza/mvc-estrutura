@@ -9,6 +9,16 @@ use App\Models\Usuario;
 
 class AuthController
 {
+    private \App\Services\AuthService $authService;
+
+    public function __construct()
+    {
+        // No mundo PHP MVC Raiz com Injeção de Dependências, 
+        // poderíamos fazer o PHP Auto-Wiring instanciar as DTOs e este Service. 
+        // Mas por clareza do boiler, instanciamos na mão caso o seu IoC Container esteja inativo.
+        $this->authService = app(\App\Services\AuthService::class);
+    }
+
     public function loginForm()
     {
         return view('auth/login');
@@ -16,12 +26,7 @@ class AuthController
 
     public function login(LoginDTO $dto)
     {
-        $usuarioModel = new Usuario();
-        $usuario = $usuarioModel->where('email', '=', $dto->email)->first();
-
-        if (!$usuario || !password_verify($dto->senha, $usuario->senha)) {
-            fail_validation(['email' => 'As credenciais informadas são inválidas.']);
-        }
+        $usuario = $this->authService->login($dto);
 
         // Armazena na sessão
         session()->set('user', ['id' => $usuario->id, 'nome' => $usuario->nome, 'email' => $usuario->email]);
@@ -36,24 +41,9 @@ class AuthController
 
     public function register(RegisterDTO $dto)
     {
-        // Validação adicional de confirmação de senha
-        if ($dto->senha !== $dto->senha_confirmacao) {
-            fail_validation(['senha_confirmacao' => 'A confirmação de senha não coincide.']);
-        }
+        $usuario = $this->authService->registrar($dto);
 
-        $usuarioModel = new Usuario();
-        if ($usuarioModel->where('email', '=', $dto->email)->first()) {
-            fail_validation(['email' => 'Este e-mail já está em uso.']);
-        }
-
-        $data = $dto->toArray();
-        unset($data['senha_confirmacao']); // Remove antes de mandar pro DB
-        
-        $data['senha'] = password_hash($data['senha'], PASSWORD_DEFAULT);
-
-        $id = $usuarioModel->insert($data);
-
-        session()->set('user', ['id' => $id, 'nome' => $dto->nome, 'email' => $dto->email]);
+        session()->set('user', ['id' => $usuario->id, 'nome' => $usuario->nome, 'email' => $usuario->email]);
 
         return Response::makeRedirect('/dashboard');
     }

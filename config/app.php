@@ -50,6 +50,7 @@ return [
     'providers' => [
         \Core\Providers\DatabaseServiceProvider::class,
         \Core\Providers\RoutingServiceProvider::class,
+        \Core\Providers\ViewServiceProvider::class,
 
         \App\Providers\AppServiceProvider::class,
     ]
