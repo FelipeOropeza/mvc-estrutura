@@ -30,45 +30,74 @@ Entender o caminho que a informação faz desde que o usuário aperta "Enter" at
 
 ```mermaid
 graph TD
+    %% Entradas
     Client((Usuário / Navegador)) -->|HTTP Request| Index["public/index.php"]
+    Index --> CoreRun["core_run()"]
     
-    subgraph Inicialização [Bootstrap & Container]
-        Index --> CoreRun["core_run()"]
-        CoreRun --> AppContainer["IoC Container & Service Providers"]
+    %% Bloco 1: Container e Provedores
+    subgraph Boot ["Inicialização (Bootstrap)"]
+        CoreRun --> AppContainer["IoC Container"]
+        AppContainer --> Providers["Service Providers<br>Registra Dependências"]
     end
     
-    subgraph Pipeline HTTP [Kernel & Middlewares]
-        AppContainer --> Kernel["HTTP Kernel"]
-        Kernel --> GlobalMW["Middlewares Globais<br>ex: SessionHandler"]
-        GlobalMW --> Router["Router Dispatcher<br>Match de URL"]
-        Router --> RouteMW["Middlewares da Rota<br>ex: Auth, CSRF"]
+    %% Bloco 2: O Pipeline HTTP
+    subgraph Pipeline ["Pipeline HTTP (Middlewares)"]
+        Providers --> Kernel["HTTP Kernel"]
+        Kernel --> GlobalMW["Middlewares Globais<br>Session, CORS, etc."]
+        GlobalMW --> Router["Router Dispatcher<br>Resolve a Rota"]
+        Router --> RouteMW["Route Middlewares<br>Auth, Role, CSRF"]
     end
     
-    subgraph Lógica da Aplicação [Domínio MVC]
-        RouteMW --> DTO["DTO & Attributes<br>Auto-Validação"]
-        DTO --> Controller["Controller"]
+    %% Bloco 3: O Coração da Aplicação
+    subgraph AppDomain ["Domínio de Aplicação (MVC)"]
+        RouteMW --> DTO["DTOs (Data Transfer Objects)<br>Gatekeeper de Autorização e Validação"]
+        DTO --> Controller["Controllers<br>Orquestram o Fluxo"]
         
-        Controller <-->|QueryBuilder| Model[("(Database / Model)")]
-        Controller -->|Renderiza| View["View<br>HTML / Twig"]
+        %% Serviços injetados no controller
+        Controller <-->|Injeta| Services["Services<br>Regras de Negócio Complexas"]
+        
+        %% Comunicação com Banco e Mutadores
+        Controller <-->|Usa| Model[("Models (Database)<br>Query Builder e Entidades")]
+        Model <-->|Transforma Dados| Mutators["Mutators<br>Limpa e Formata Ex: LimpaCpf"]
+        Model <-->|Usa Constraints| Rules["Custom Rules<br>Validações de Domínio/Atributos"]
+        
+        %% Renderização
+        Controller -->|Prepara Dados| View["Views<br>(PHP Nativo ou Twig)"]
     end
     
-    subgraph Resposta Final
-        View --> ResponseObj["Response Obj"]
-        Controller -->|Retorna direto| ResponseObj
-        ResponseObj -.->|Passa de volta pelos MWs| Client
+    %% Tratamento de Exceções voando por fora
+    subgraph ErrorHandling ["Safety Net"]
+        ExceptionHandler["ExceptionHandler<br>Captura Throwables (Erros/Bugs)"]
+        ExceptionHandler -.->|Renderiza 500 / Loga App.log| Client
     end
     
-    classDef blue fill:#3b82f6,stroke:#1d4ed8,color:#fff;
-    classDef purple fill:#8b5cf6,stroke:#6d28d9,color:#fff;
-    classDef green fill:#10b981,stroke:#047857,color:#fff;
-    classDef dark fill:#1f2937,stroke:#111827,color:#fff;
-    classDef orange fill:#f97316,stroke:#c2410c,color:#fff;
+    %% Bloco 4: Saída
+    subgraph Saida ["Saída (Response)"]
+        View --> ResponseObj["Response Objeto<br>HTML, JSON ou Redirect"]
+        Controller -->|Retorna| ResponseObj
+        ResponseObj -.->|Viagem de Volta (Headers)| Client
+    end
     
-    class Index,CoreRun,AppContainer dark;
+    %% Lidando com Exceções
+    Pipeline -.->|Falha| ExceptionHandler
+    AppDomain -.->|Exceptions Lançadas| ExceptionHandler
+    
+    %% Estilos Modernos
+    classDef blue fill:#2563eb,stroke:#1e40af,color:#fff,stroke-width:2px,rx:5px,ry:5px;
+    classDef purple fill:#7c3aed,stroke:#5b21b6,color:#fff,stroke-width:2px,rx:5px,ry:5px;
+    classDef green fill:#059669,stroke:#065f46,color:#fff,stroke-width:2px,rx:5px,ry:5px;
+    classDef dark fill:#1f2937,stroke:#111827,color:#fff,stroke-width:2px,rx:5px,ry:5px;
+    classDef orange fill:#ea580c,stroke:#9a3412,color:#fff,stroke-width:2px,rx:5px,ry:5px;
+    classDef red fill:#dc2626,stroke:#7f1d1d,color:#fff,stroke-width:2px,rx:5px,ry:5px;
+    classDef default fill:#f3f4f6,stroke:#d1d5db,color:#111827;
+    
+    class Client,Index,CoreRun dark;
+    class AppContainer,Providers purple;
     class Kernel,GlobalMW,Router,RouteMW purple;
-    class Controller,Model,View blue;
-    class DTO orange;
-    class ResponseObj green;
+    class Controller,Services,Model blue;
+    class DTO,Mutators,Rules orange;
+    class View,ResponseObj green;
+    class ExceptionHandler red;
 ```
 
 ---
