@@ -1,22 +1,16 @@
 <?php
 
-use Core\Routing\Router;
+use Core\Routing\Route;
 use App\Controllers\AuthController;
 
-$router = Router::getInstance();
+Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
 
-$router->get('/login', [AuthController::class, 'loginForm'])->name('login');
-$router->post('/login', [AuthController::class, 'login']);
+Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
 
-$router->get('/register', [AuthController::class, 'registerForm'])->name('register');
-$router->post('/register', [AuthController::class, 'register']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-$router->post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// Rota Restrita (Substitua por um Middleware de Auth global em produção)
-$router->get('/dashboard', function() {
-    if (!session()->has('user')) {
-        return \Core\Http\Response::makeRedirect('/login');
-    }
+Route::get('/dashboard', function() {
     return view('dashboard');
-})->name('dashboard');
+})->name('dashboard')->middleware(\App\Middleware\AuthMiddleware::class);
