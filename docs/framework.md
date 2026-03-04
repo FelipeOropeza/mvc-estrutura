@@ -412,7 +412,60 @@ Use a Forja do Console (CLI):
 ```bash
 php forge make:rule DocumentoCpf
 ```
-Edite a Lógica (`app/Rules/DocumentoCpf.php`) para testar DB, Matemática, Regex. Depois apenas instale-a no seu Model `#[DocumentoCpf]`.
+Edite a Lógica (`app/Rules/DocumentoCpf.php`) para testar DB, Matemática, Regex. Depois apenas instale-a no seu Model ou DTO usando a notação mágica PHP8 `#[DocumentoCpf]`.
+
+### 5.5 Data Transfer Objects (DTOs) e Autorização Prévia
+
+Para aplicações complexas, validar dados ou formatá-los dentro da Model é tardio (pode quebrar o Isolamento de Domínio) e usar `$request->all()` dentro de um Controller deixa furos de segurança ou de consistência de Payload da API.
+
+O framework traz as superclasses `DataTransferObject`. Elas atuam como um *Gatekeeper*, barrando o lixo antes mesmo de a requisição atingir seu Controller (exatamente como os *FormRequests* em grandes framerworks, mas baseados nativamente em Atributos).
+
+**1. A Classe DTO (Ex: LoginDTO, TransferenciaDTO):**
+Mapeie exatamente o que a sua Rota espera que o usuário te envie em JSON/POST. Use as mesmas Tags de validação que você aprenderia numa Model:
+
+```php
+namespace App\DTOs;
+
+use Core\Validation\DataTransferObject;
+use Core\Attributes\Required;
+use Core\Attributes\Min;
+
+class TransferenciaDTO extends DataTransferObject 
+{
+    #[Required(message: "O valor da transferência é obrigatório")]
+    #[Min(0.01, message: "A transferência precisa ser maior que zero.")]
+    public float $valor;
+
+    #[Required(message: "Chave do beneficiário é necessária")]
+    public string $pix_destino;
+    
+    // (Opcional) Sobrescreva esse método.
+    // Retorne False para bloquear a requisição com Erro 403 antes mesmo 
+    // das regras passarem, ideal para bloqueio de permissão de cargos!
+    protected function authorize(): bool {
+        return session()->get('cargo') === 'gerente';
+    }
+}
+```
+
+**2. A Mágica no Controller (Autowiring + Validação Automática):**
+Se você colocar o DTO no tipo do parâmetro, o IoC Container intercepta a Requisição JSON/POST, preenche todos os dados e executa o Validator dele! Se as regras de atributos falharem ou a função `authorize()` barrar, o usuário recebe um HTTP Redirect pre-fabricado ou um HTTP 422 JSON automaticamente de volta. **Seu Controller nunca mais precisará testar IFs!**
+
+```php
+use App\DTOs\TransferenciaDTO;
+use App\Services\BancoCentralService; // Injetado junto da DTO!
+use Core\Http\Response;
+
+// Esse método só roda se o DTO passou na barreira com sucesso e sem Erros:
+public function transferir(TransferenciaDTO $dto, BancoCentralService $bc)
+{
+    // O $dto agora guarda apenas campos limpos e super tipados!
+    $bc->efetivarPix($dto->pix_destino, $dto->valor);
+    
+    // Pode retornar o array dele direto pro Model usando $dto->toArray()
+    return Response::makeJson(['status' => 'sucesso', 'mensagem' => 'Pix Efetuado!']);
+}
+```
 
 ---
 
