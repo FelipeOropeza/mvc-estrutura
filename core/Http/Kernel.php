@@ -40,6 +40,9 @@ class Kernel
     public function handle(Request $request): Response
     {
         try {
+            // Garante que a injeção de dependências e os helpers recebam a requisição MAIS RECENTE rotativa (Worker Mode PHP)
+            \Core\Support\Container::getInstance()->instance(Request::class, $request);
+
             // Em vez de rodarmos globais com `Pipeline` e depois o do Router com Pipeline,
             // podemos apenas enviar a Request para o Router. 
             // Opcionalmente, um Pipeline global em volta do Roteador também funciona.
