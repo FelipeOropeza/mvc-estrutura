@@ -30,30 +30,30 @@ Entender o caminho que a informação faz desde que o usuário aperta "Enter" at
 
 ```mermaid
 graph TD
-    Client((Usuário / Navegador)) -->|HTTP Request| Index[public/index.php]
+    Client((Usuário / Navegador)) -->|HTTP Request| Index["public/index.php"]
     
     subgraph Inicialização [Bootstrap & Container]
-        Index --> CoreRun[core_run()]
-        CoreRun --> AppContainer[IoC Container & Service Providers]
+        Index --> CoreRun["core_run()"]
+        CoreRun --> AppContainer["IoC Container & Service Providers"]
     end
     
     subgraph Pipeline HTTP [Kernel & Middlewares]
-        AppContainer --> Kernel[HTTP Kernel]
-        Kernel --> GlobalMW[Middlewares Globais<br>ex: SessionHandler]
-        GlobalMW --> Router[Router Dispatcher<br>Match de URL]
-        Router --> RouteMW[Middlewares da Rota<br>ex: Auth, CSRF]
+        AppContainer --> Kernel["HTTP Kernel"]
+        Kernel --> GlobalMW["Middlewares Globais<br>ex: SessionHandler"]
+        GlobalMW --> Router["Router Dispatcher<br>Match de URL"]
+        Router --> RouteMW["Middlewares da Rota<br>ex: Auth, CSRF"]
     end
     
     subgraph Lógica da Aplicação [Domínio MVC]
-        RouteMW --> DTO[DTO & Attributes<br>Auto-Validação]
-        DTO --> Controller[Controller]
+        RouteMW --> DTO["DTO & Attributes<br>Auto-Validação"]
+        DTO --> Controller["Controller"]
         
-        Controller <-->|QueryBuilder| Model[(Database / Model)]
-        Controller -->|Renderiza| View[View<br>HTML / Twig]
+        Controller <-->|QueryBuilder| Model[("(Database / Model)")]
+        Controller -->|Renderiza| View["View<br>HTML / Twig"]
     end
     
     subgraph Resposta Final
-        View --> ResponseObj[Response Obj]
+        View --> ResponseObj["Response Obj"]
         Controller -->|Retorna direto| ResponseObj
         ResponseObj -.->|Passa de volta pelos MWs| Client
     end
