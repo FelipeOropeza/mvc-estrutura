@@ -6,24 +6,74 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 
 ## Índice
 
-1. [Estrutura de Diretórios](#1-estrutura-de-diretórios)
-2. [Roteamento Avançado](#2-roteamento-avançado)
-3. [Controllers e HTTP](#3-controllers-e-http)
-4. [Banco de Dados (ORM Moderno)](#4-banco-de-dados-orm-moderno)
-5. [Validações e Atributos Mágicos](#5-validações-e-atributos-mágicos)
-6. [Mutations (Mutadores de Dados)](#6-mutations-mutadores-de-dados)
-7. [Middlewares e Segurança](#7-middlewares-e-segurança)
-8. [Upload de Arquivos](#8-upload-de-arquivos)
-9. [Views e Interface de Usuário (UI)](#9-views-e-interface-de-usuário-ui)
-10. [Injeção de Dependências e Service Providers](#10-injeção-de-dependências-e-service-providers)
-11. [CLI (Forge Console) e Migrations](#11-cli-forge-console-e-migrations)
-12. [Helpers Globais](#12-helpers-globais)
-13. [Tratamento de Exceções e Debug Bar](#13-tratamento-de-exceções-e-debug-bar)
-14. [Nuvem e o Foguete FrankenPHP](#14-nuvem-e-o-foguete-frankenphp)
+1. [O Ciclo de Vida da Requisição (Lifecycle)](#1-o-ciclo-de-vida-da-requisição-lifecycle)
+2. [Estrutura de Diretórios](#2-estrutura-de-diretórios)
+3. [Roteamento Avançado](#3-roteamento-avançado)
+4. [Controllers e HTTP](#4-controllers-e-http)
+5. [Banco de Dados (ORM Moderno)](#5-banco-de-dados-orm-moderno)
+6. [Validações e Atributos Mágicos](#6-validações-e-atributos-mágicos)
+7. [Mutations (Mutadores de Dados)](#7-mutations-mutadores-de-dados)
+8. [Middlewares e Segurança](#8-middlewares-e-segurança)
+9. [Upload de Arquivos](#9-upload-de-arquivos)
+10. [Views e Interface de Usuário (UI)](#10-views-e-interface-de-usuário-ui)
+11. [Injeção de Dependências e Service Providers](#11-injeção-de-dependências-e-service-providers)
+12. [CLI (Forge Console) e Migrations](#12-cli-forge-console-e-migrations)
+13. [Helpers Globais](#13-helpers-globais)
+14. [Tratamento de Exceções e Debug Bar](#14-tratamento-de-exceções-e-debug-bar)
+15. [Nuvem e o Foguete FrankenPHP](#15-nuvem-e-o-foguete-frankenphp)
 
 ---
 
-## 1. Estrutura de Diretórios
+## 1. O Ciclo de Vida da Requisição (Lifecycle)
+
+Entender o caminho que a informação faz desde que o usuário aperta "Enter" até a tela aparecer é o segredo dos desenvolvedores Sêniors. Como este framework é baseado em padrões modernos (PSR-15), o fluxo usa uma arquitetura de "Cebola" (Onion Architecture).
+
+```mermaid
+graph TD
+    Client((Usuário / Navegador)) -->|HTTP Request| Index[public/index.php]
+    
+    subgraph Inicialização [Bootstrap & Container]
+        Index --> CoreRun[core_run()]
+        CoreRun --> AppContainer[IoC Container & Service Providers]
+    end
+    
+    subgraph Pipeline HTTP [Kernel & Middlewares]
+        AppContainer --> Kernel[HTTP Kernel]
+        Kernel --> GlobalMW[Middlewares Globais<br>ex: SessionHandler]
+        GlobalMW --> Router[Router Dispatcher<br>Match de URL]
+        Router --> RouteMW[Middlewares da Rota<br>ex: Auth, CSRF]
+    end
+    
+    subgraph Lógica da Aplicação [Domínio MVC]
+        RouteMW --> DTO[DTO & Attributes<br>Auto-Validação]
+        DTO --> Controller[Controller]
+        
+        Controller <-->|QueryBuilder| Model[(Database / Model)]
+        Controller -->|Renderiza| View[View<br>HTML / Twig]
+    end
+    
+    subgraph Resposta Final
+        View --> ResponseObj[Response Obj]
+        Controller -->|Retorna direto| ResponseObj
+        ResponseObj -.->|Passa de volta pelos MWs| Client
+    end
+    
+    classDef blue fill:#3b82f6,stroke:#1d4ed8,color:#fff;
+    classDef purple fill:#8b5cf6,stroke:#6d28d9,color:#fff;
+    classDef green fill:#10b981,stroke:#047857,color:#fff;
+    classDef dark fill:#1f2937,stroke:#111827,color:#fff;
+    classDef orange fill:#f97316,stroke:#c2410c,color:#fff;
+    
+    class Index,CoreRun,AppContainer dark;
+    class Kernel,GlobalMW,Router,RouteMW purple;
+    class Controller,Model,View blue;
+    class DTO orange;
+    class ResponseObj green;
+```
+
+---
+
+## 2. Estrutura de Diretórios
 
 O framework segue uma separação lógica e profissional de pastas:
 
