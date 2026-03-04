@@ -97,8 +97,15 @@ graph TD
     class Controller,Services,Model blue;
     class DTO,Mutators,Rules orange;
     class View,ResponseObj green;
+    class View,ResponseObj green;
     class ExceptionHandler red;
 ```
+
+> **Ilustração do Ciclo Completo de Arquitetura em Cebola (Onion Architecture)**
+>
+> *(Caso não consiga visualizar o Mermaid acima, certifique-se de salvar a imagem do Fluxograma disponibilizada [**aqui**](assets/lifecycle.jpg) e referenciá-la).*
+> 
+> ![Ciclo de Vida da Requisição (Lifecycle)](assets/lifecycle.jpg)
 
 ---
 
@@ -336,27 +343,28 @@ class User extends Model {
 
 ---
 
-## 5. Validações e Atributos Mágicos
+## 5. Validações e Data Transfer Objects (DTOs)
 
-Use as novas regras de **Attributes (PHP 8)** diretamente dentro da classe Model. Chega de `if` no Controller!
+Ao contrário dos padrões antigos, as validações não devem poluir o fluxo dos `Controllers`. Também já evoluímos o pensamento moderno: a classe `Model` só deve se preocupar com abstrair as interações do banco de dados (Query Builder, Limits) e lidar com Mutators (Formatações para insert), sem ficar lidando com regras de formulário HTTP.
 
-### 5.1 Regras Mágicas Disponíveis e Suas Propriedades
-Você pode engatilhar uma mensagem de erro totalmente em português nas configurações:
+As suas validações de Requests vivem exclusivamente e de maneira poderosa dentro dos **Data Transfer Objects (DTOs)**, atuando como verdadeiros **Gatekeepers**, blindando sua aplicação usando a notação mágica do **PHP 8 Attributes**.
+
+### 5.1 Regras Mágicas e o Conceito Gatekeeper
+
+Mapeie exatamente o que a sua Rota espera que o usuário envie em JSON ou num `POST` de formulário criando uma classe na pasta `app/DTOs`.
 
 ```php
+namespace App\DTOs;
+
+use Core\Validation\DataTransferObject;
 use Core\Attributes\Required;
 use Core\Attributes\Min;
 use Core\Attributes\Email;
-use Core\Attributes\Image;
 use Core\Attributes\MatchField;
 
-class Usuario extends Model
+class RegistroDTO extends DataTransferObject
 {
     // Required garante que não seja vazio e aceita customizar o texto 
-    #[Required('Ei, você esqueceu de preencher o CPF.')]
-    public ?string $cpf = null;
-
-    // Regras acopladas uma abaixo da outra:
     #[Required('Digite um E-mail')]
     #[Email('Esse não parece ser um E-mail válido.')]
     public ?string $email = null;
@@ -369,41 +377,48 @@ class Usuario extends Model
     // Valida se a Confirmação de Senha é igual à Senha
     #[MatchField('password', 'As senhas não conferem')]
     public ?string $password_confirm = null;
-    
-    // Valida Booleanos estritos (true, false, '1', '0')
-    #[IsBool('O Aceite de termos deve ser Sim ou Não')]
-    public ?bool $aceita_termos = null;
-    
-    // Validação estrita de Floats Simulando Database. Ex (5 Precisão Total Numérica , 2 Decimais): Limit: 999.99
-    #[IsFloat(5, 2, 'Dinheiro incompatível.')]
-    public ?float $saldo = null;
+
+    // (Opcional) Retorne false para barrar a requisição com 403 antes mesmo 
+    // das regras passarem! Ideal para checar cargo/ACL
+    protected function authorize(): bool {
+        return session()->get('cargo') !== 'suspenso';
+    }
 }
 ```
 
-### 5.2 Rodando a Validação 
-No `Controller`, a validação devolve somente dados seguros, ou trava a navegação e avisa a página anterior ativando o helper de erro de interface:
+### 5.2 A Mágica no Controller (Autowiring e Defesa Automática)
+
+Sua interface exige a `RegistroDTO` como parâmetro e o Container faz a injeção cruzada na rota com os disparos via Reflection `Request`. Se as regras de atributos falharem, o Controller **nem chega a ser iniciado**. O usuário recebe automaticamente o *Redirect* de erro com as Flash messages pra interface. O Controller agora só trabalha em paz!
+
 ```php
-public function criar(Request $request)
+use App\DTOs\RegistroDTO;
+use Core\Http\Response;
+
+// O método SÓ executa se nenhum invasor passar o gatekeeper da DTO!
+public function registrar(RegistroDTO $dto)
 {
-    $dados = $request->all();
+    // O $dto agora guarda apenas campos limpos, testados e super tipados!
+    $dadosLimpos = $dto->toArray();
+    
+    // Pode remover chaves não relativas à tabela SQL, como a confirmação
+    unset($dadosLimpos['password_confirm']);
     
     $userModel = new Usuario();
-    $userModel->fill($dados);
+    $userModel->insert($dadosLimpos);
     
-    $seguros = $userModel->validate(); // Se falhar ele envia o erro e cancela a rota automaticamente
-    
-    $userModel->insert($seguros);
     return Response::makeRedirect('/sucesso');
 }
 ```
 
-### 5.3 Validação Manual no Controller
-Caso a validação não sirva pra banco de dados (exemplo, processar Cartão na Pagar.me e devolver erro no visual pro usuário):
+### 5.3 Validação Manual para Casos Específicos
+
+Quando algo validou no DTO mas só falhou lá no final da operação lógica isolada (Ex: processar Cartão na Pagar.me devolveu que não tem limite), use o método manual relâmpago:
+
 ```php
 $pagou = $pagarMe->transacionar($cartao);
 if (!$pagou) {
-    fail_validation('cartao', 'Limite Recusado pelo seu Banco.');
-    // Isso cancela a rota, reflete na variável de sessão e devolve na interface a mensagem "Limite..".
+    fail_validation('cartao_credito', 'Limite Recusado pelo seu Banco Emissor.');
+    // Isso cancela a rota automaticamente, salva a variável de sessão e volta a tela avisando onde ocorreu o erro.
 }
 ```
 
@@ -412,60 +427,7 @@ Use a Forja do Console (CLI):
 ```bash
 php forge make:rule DocumentoCpf
 ```
-Edite a Lógica (`app/Rules/DocumentoCpf.php`) para testar DB, Matemática, Regex. Depois apenas instale-a no seu Model ou DTO usando a notação mágica PHP8 `#[DocumentoCpf]`.
-
-### 5.5 Data Transfer Objects (DTOs) e Autorização Prévia
-
-Para aplicações complexas, validar dados ou formatá-los dentro da Model é tardio (pode quebrar o Isolamento de Domínio) e usar `$request->all()` dentro de um Controller deixa furos de segurança ou de consistência de Payload da API.
-
-O framework traz as superclasses `DataTransferObject`. Elas atuam como um *Gatekeeper*, barrando o lixo antes mesmo de a requisição atingir seu Controller (exatamente como os *FormRequests* em grandes framerworks, mas baseados nativamente em Atributos).
-
-**1. A Classe DTO (Ex: LoginDTO, TransferenciaDTO):**
-Mapeie exatamente o que a sua Rota espera que o usuário te envie em JSON/POST. Use as mesmas Tags de validação que você aprenderia numa Model:
-
-```php
-namespace App\DTOs;
-
-use Core\Validation\DataTransferObject;
-use Core\Attributes\Required;
-use Core\Attributes\Min;
-
-class TransferenciaDTO extends DataTransferObject 
-{
-    #[Required(message: "O valor da transferência é obrigatório")]
-    #[Min(0.01, message: "A transferência precisa ser maior que zero.")]
-    public float $valor;
-
-    #[Required(message: "Chave do beneficiário é necessária")]
-    public string $pix_destino;
-    
-    // (Opcional) Sobrescreva esse método.
-    // Retorne False para bloquear a requisição com Erro 403 antes mesmo 
-    // das regras passarem, ideal para bloqueio de permissão de cargos!
-    protected function authorize(): bool {
-        return session()->get('cargo') === 'gerente';
-    }
-}
-```
-
-**2. A Mágica no Controller (Autowiring + Validação Automática):**
-Se você colocar o DTO no tipo do parâmetro, o IoC Container intercepta a Requisição JSON/POST, preenche todos os dados e executa o Validator dele! Se as regras de atributos falharem ou a função `authorize()` barrar, o usuário recebe um HTTP Redirect pre-fabricado ou um HTTP 422 JSON automaticamente de volta. **Seu Controller nunca mais precisará testar IFs!**
-
-```php
-use App\DTOs\TransferenciaDTO;
-use App\Services\BancoCentralService; // Injetado junto da DTO!
-use Core\Http\Response;
-
-// Esse método só roda se o DTO passou na barreira com sucesso e sem Erros:
-public function transferir(TransferenciaDTO $dto, BancoCentralService $bc)
-{
-    // O $dto agora guarda apenas campos limpos e super tipados!
-    $bc->efetivarPix($dto->pix_destino, $dto->valor);
-    
-    // Pode retornar o array dele direto pro Model usando $dto->toArray()
-    return Response::makeJson(['status' => 'sucesso', 'mensagem' => 'Pix Efetuado!']);
-}
-```
+Edite a Lógica (`app/Rules/DocumentoCpf.php`) para testar DB, Matemática, Regex. Depois, simplesmente insira o novo atributo na `class RegistroDTO`: `#[DocumentoCpf]`.
 
 ---
 
@@ -676,7 +638,7 @@ Localizados em `app/Providers/`. São as Centrais de Distribuição de Conhecime
 
 ## 11. CLI (Forge Console) e Migrations
 
-Escrever código na mão é amadorismo. O `php forge` é um gerador visual super útil acessível pelo prompt de comandos!
+Escrever código na mão é amadorismo. O `php forge` é um gerador visual super útil acessível de raiz no micro-framework!
 
 **Lista Rápida Baseada no Motor Padrão:**
 ```bash
@@ -685,31 +647,60 @@ php forge
 
 # Geradores Rápidos - "Make":
 php forge make:controller UsuarioController  # Na Pasta /Controllers
-php forge make:model Fornecedor             # Na Pasta /Models com $fillable pre-pronto
+php forge make:model Fornecedor             # Na Pasta /Models com $table pronto
+php forge make:service EmailService         # Na Pasta /Services pra lógica de regra de negócio
 php forge make:middleware TravaIP           # Na Pasta /Middleware 
 php forge make:view relatorios/financeiro   # Gera HTMLs limpos e alinhados num padrão
 
-# Criação de Lógicas Magicas Injetáveis Direto Dentro Da Model
+# Criação de Lógicas Magicas Injetáveis na DTO e Model
 php forge make:rule NomeDaSuaValidadora      # Pasta /Rules
 php forge make:mutator NomeDaSuaMutaçãoLimpeza # Pasta /Mutators
 
 # Compiladores Finais e Scaffolding
-php forge setup:auth               # Instala um sistema MVC de Autenticação base (Login, Registro, Banco e Rotas)
+php forge setup:auth               # Instala um sistema MVC de Autenticação base (Login, Registro, DB e Rotas)
 php forge setup:engine twig        # Migra o projeto entre Php/Twig como View padrão do Front   
-php forge optimize                 # Escala pra Nuvem compilando configs em memória máxima    
+php forge optimize                 # Compila Rotas e Arquivos no Cache acelerando em até 10x
+php forge optimize:clear           # Limpa a compilação do Cache e do Optimize 
 ```
 
-### Migrations e Schema
-Este framework possui um Migrator acoplado que executa arquivos puros da pasta `database/migrations/` ordenados por Snapshot Cronológico.
+### 11.1 Migrations e Schema Builder
 
+O `php forge migrate` conta com um sistema brilhante de Versionamento de Banco de Dados. Nunca crie tabelas abrindo o PHPMyAdmin na sua máquina. Crie um arquivo declarativo que rastreia tudo e rola pelos ambientes do seu time!
+
+Para criar um novo bloco cronológico pro banco:
 ```bash
 php forge make:migration CreateUsersTable
 ```
-Ele gerará um arquivo com as funções `up()` e `down()` contendo o Schema em sintaxe de Database puro.
-Para rodar para o banco em definitivo:
-```bash
-php forge migrate
+
+A Migration utilizará nossa classe interna conectada ao Database de alta performance, utilizando a biblioteca PDO da base.
+Exemplo de Escrita no Scaffold:
+```php
+<?php
+
+class CreateUsersTable
+{
+    public function up()
+    {
+        $db = \Core\Database\Connection::getInstance();
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                senha VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+    }
+
+    public function down()
+    {
+        $db = \Core\Database\Connection::getInstance();
+        $db->exec("DROP TABLE IF EXISTS usuarios");
+    }
+}
 ```
+
+Quando rolar `php forge migrate`, o framework lê e executa linha por linha apenas os arquivos ordenados por Timestamp que ainda não foram gravados com sucesso na sua base! Em caso de falha em nuvem ele executa rollback do ambiente em andamento!
 
 ---
 
@@ -727,7 +718,23 @@ Atalhos diretos da Programação para facilitar implementações cruciais.
 
 ---
 
-## 13. Tratamento de Exceções e Debug Bar
+## 13. Cache e Sessões em Alta Velocidade (Redis)
+
+O ecossistema é otimizado para não sofrer gargalos na leitura do Disco HD em Máquinas de Produção na Nuvem e pode ser configurado para usar o cluster ultra veloz baseando-se em RAM através do **Redis**.
+
+Acesse seu arquivo base de configuração do `config/app.php` e altere a ponte de Sessão PHP.
+```php
+'session' => [
+    'driver' => 'redis', // Pode ser 'file' para local ou 'redis' pro Heroku/Aws
+    ...
+]
+```
+
+O `RedisSessionHandler` já construído na nossa base se aliança imediatamente ao container sem vazar dados. Além disso, o GC Probability do PHP não sofre com interrupções nem File System Locking, protegendo seu Worker Assíncrono para aguentar milhares de concorrências simultâneas de usuários sem congelar o Servidor!
+
+---
+
+## 14. Tratamento de Exceções e Debug Bar
 
 Esse motor usa injeção de ExceptionGlobal nativa (Na pasta `core/Exceptions/Handler.php`) que intercepta TUDO que crasha seu site e impede dele expor os vazamentos em Nuvem, caso configurado corretamente.
 
@@ -740,7 +747,7 @@ A arquitetura irá "ligar" uma **Debug Bar Interativa HTML Deslumbrante** simila
 
 ---
 
-## 14. Nuvem e o Foguete FrankenPHP
+## 15. Nuvem e o Foguete FrankenPHP
 
 Esse sistema foi inteiramente projetado para dar as costas aos servidores padrão limitados como o XAMPP, Apache e NGINX-FPM. O código aqui não vaza variáveis globais propositalmente.
 
