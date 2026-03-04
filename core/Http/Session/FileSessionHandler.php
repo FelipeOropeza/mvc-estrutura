@@ -35,7 +35,9 @@ class FileSessionHandler implements SessionHandlerInterface
         $file = $this->path . DIRECTORY_SEPARATOR . $id;
         if (file_exists($file)) {
             // Utilizamos file_get_contents sem LOCK_SH restritivo no Windows longo, 
-            // evitando travar a sessão durante múltiplas requests assíncronas do mesmo usuário
+            // evitando travar a sessão durante múltiplas requests assíncronas do mesmo usuário.
+            // Trade-off: há uma pequena race condition no Worker Mode. Dois workers lendo a mesma sessão 
+            // simultaneamente antes de qualquer gravação podem pegar dados desatualizados.
             return (string) file_get_contents($file);
         }
         return '';

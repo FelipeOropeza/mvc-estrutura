@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Controllers;
+
+use Core\Http\Response;
+use App\DTOs\Auth\LoginDTO;
+use App\DTOs\Auth\RegisterDTO;
+use App\Models\Usuario;
+
+class AuthController
+{
+    public function loginForm()
+    {
+        return view('auth/login');
+    }
+
+    public function login(LoginDTO $dto)
+    {
+        $usuarioModel = new Usuario();
+        $usuario = $usuarioModel->where('email', '=', $dto->email)->first();
+
+        if (!$usuario || !password_verify($dto->senha, $usuario->senha)) {
+            fail_validation(['email' => 'As credenciais informadas são inválidas.']);
+        }
+
+        // Armazena na sessão
+        session()->set('user', ['id' => $usuario->id, 'nome' => $usuario->nome, 'email' => $usuario->email]);
+
+        return Response::makeRedirect('/dashboard');
+    }
+
+    public function registerForm()
+    {
+        return view('auth/register');
+    }
+
+    public function register(RegisterDTO $dto)
+    {
+        // Validação adicional de confirmação de senha
+        if ($dto->senha !== $dto->senha_confirmacao) {
+            fail_validation(['senha_confirmacao' => 'A confirmação de senha não coincide.']);
+        }
+
+        $usuarioModel = new Usuario();
+        if ($usuarioModel->where('email', '=', $dto->email)->first()) {
+            fail_validation(['email' => 'Este e-mail já está em uso.']);
+        }
+
+        $data = $dto->toArray();
+        unset($data['senha_confirmacao']); // Remove antes de mandar pro DB
+        
+        $data['senha'] = password_hash($data['senha'], PASSWORD_DEFAULT);
+
+        $id = $usuarioModel->insert($data);
+
+        session()->set('user', ['id' => $id, 'nome' => $dto->nome, 'email' => $dto->email]);
+
+        return Response::makeRedirect('/dashboard');
+    }
+
+    public function logout()
+    {
+        session()->remove('user');
+        session()->destroy();
+        return Response::makeRedirect('/login');
+    }
+}

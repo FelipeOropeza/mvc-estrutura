@@ -64,6 +64,7 @@ php forge make:rule CpfValido
 php forge make:mutator LimpaCpf
 php forge migrate
 php forge setup:engine twig
+php forge setup:auth
 ```
 
 ## Licença

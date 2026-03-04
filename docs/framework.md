@@ -521,7 +521,8 @@ php forge make:view relatorios/financeiro   # Gera HTMLs limpos e alinhados num 
 php forge make:rule NomeDaSuaValidadora      # Pasta /Rules
 php forge make:mutator NomeDaSuaMutaçãoLimpeza # Pasta /Mutators
 
-# Compiladores Finais
+# Compiladores Finais e Scaffolding
+php forge setup:auth               # Instala um sistema MVC de Autenticação base (Login, Registro, Banco e Rotas)
 php forge setup:engine twig        # Migra o projeto entre Php/Twig como View padrão do Front   
 php forge optimize                 # Escala pra Nuvem compilando configs em memória máxima    
 ```

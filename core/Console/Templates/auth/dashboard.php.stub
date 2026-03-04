@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen border-t-4 border-indigo-600">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-gray-800">Aplicação</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600">Olá, <?= htmlspecialchars(session('user')['nome'] ?? 'Visitante') ?>!</span>
+                    <form action="/logout" method="POST" class="inline m-0">
+                        <?= csrf_field() ?? '' ?>
+                        <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800 focus:outline-none">Sair</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6 text-center py-20">
+                <h3 class="text-2xl font-bold text-gray-900">Bem-vindo ao Painel!</h3>
+                <div class="mt-2 max-w-xl text-sm text-gray-500 mx-auto">
+                    <p>A autenticação completa com MVC Base foi implementada com sucesso. Você está logado no sistema seguro.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

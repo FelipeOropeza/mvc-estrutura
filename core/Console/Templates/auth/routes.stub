@@ -1,0 +1,22 @@
+<?php
+
+use Core\Routing\Router;
+use App\Controllers\AuthController;
+
+$router = Router::getInstance();
+
+$router->get('/login', [AuthController::class, 'loginForm'])->name('login');
+$router->post('/login', [AuthController::class, 'login']);
+
+$router->get('/register', [AuthController::class, 'registerForm'])->name('register');
+$router->post('/register', [AuthController::class, 'register']);
+
+$router->post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Rota Restrita (Substitua por um Middleware de Auth global em produção)
+$router->get('/dashboard', function() {
+    if (!session()->has('user')) {
+        return \Core\Http\Response::makeRedirect('/login');
+    }
+    return view('dashboard');
+})->name('dashboard');

@@ -147,6 +147,8 @@ class QueryBuilder
     {
         $first = $models[0];
 
+        // ⚠️ Nota: eagerLoadRelations suporta apenas belongsTo e hasMany no momento.
+        // O suporte para hasOne não foi implementado e será ignorado se tentado.
         foreach ($this->with as $relationMethod) {
             if (!method_exists($first, $relationMethod)) {
                 continue;

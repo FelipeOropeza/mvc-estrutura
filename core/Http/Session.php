@@ -18,7 +18,16 @@ class Session
                 $port = function_exists('env') ? env('REDIS_PORT', 6379) : 6379;
                 $password = function_exists('env') ? env('REDIS_PASSWORD', '') : '';
 
-                $handler = new \Core\Http\Session\RedisSessionHandler($host, (int) $port, $password);
+                try {
+                    $handler = new \Core\Http\Session\RedisSessionHandler($host, (int) $port, $password);
+                } catch (\Exception $e) {
+                    // Fallback de emergência para FileSessionHandler caso Redis caia
+                    error_log("Redis Session Error: " . $e->getMessage() . " - Fallback para FileSessionHandler ativado.");
+
+                    $driver = 'file'; // Garante o GC padrão
+                    $path = __DIR__ . '/../../storage/framework/sessions';
+                    $handler = new \Core\Http\Session\FileSessionHandler($path);
+                }
             } else {
                 // Arquivo livre sem trava de concorrência massiva
                 $path = __DIR__ . '/../../storage/framework/sessions';

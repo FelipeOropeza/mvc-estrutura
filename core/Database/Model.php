@@ -83,9 +83,12 @@ abstract class Model
         }
 
         $this->relationDefinitionMode = true;
-        // Chama o método para interceptar os parâmetros e retornar a Definição
-        $def = $this->$method();
-        $this->relationDefinitionMode = false;
+        try {
+            // Chama o método para interceptar os parâmetros e retornar a Definição
+            $def = $this->$method();
+        } finally {
+            $this->relationDefinitionMode = false; // Sempre reseta independentemente de exceptions
+        }
 
         return $def instanceof RelationDefinition ? $def : null;
     }
