@@ -161,7 +161,6 @@ abstract class Model
     public function insert(array $data): int
     {
         $data = $this->filterFillable($data);
-        $data = $this->applyMutators($data);
 
         if ($this->timestamps && !isset($data['created_at'])) {
             $now = date('Y-m-d H:i:s');
@@ -196,7 +195,6 @@ abstract class Model
     public function update(mixed $id, array $data): bool
     {
         $data = $this->filterFillable($data);
-        $data = $this->applyMutators($data);
 
         if ($this->timestamps && !isset($data['updated_at'])) {
             $data['updated_at'] = date('Y-m-d H:i:s');
@@ -331,30 +329,5 @@ abstract class Model
         }
 
         return array_intersect_key($data, array_flip($this->fillable));
-    }
-
-    /**
-     * Busca na Model atual por atributos `Core\Contracts\Mutator` e aplica as transformações.
-     */
-    protected function applyMutators(array $data): array
-    {
-        $reflection = new \ReflectionClass($this);
-        $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
-
-        foreach ($properties as $property) {
-            $name = $property->getName();
-
-            // Só aplica as Mutações em propriedades que estão sendo preenchidas pra ir pro banco
-            if (array_key_exists($name, $data)) {
-                $attributes = $property->getAttributes(\Core\Contracts\Mutator::class, \ReflectionAttribute::IS_INSTANCEOF);
-
-                foreach ($attributes as $attribute) {
-                    $mutator = $attribute->newInstance();
-                    $data[$name] = $mutator->mutate($name, $data[$name]);
-                }
-            }
-        }
-
-        return $data;
     }
 }
