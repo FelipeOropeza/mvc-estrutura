@@ -107,6 +107,7 @@ class Kernel
         echo "  make:seeder <Nome>       Cria uma nova classe de Seeder. Ex: DatabaseSeeder\n";
         echo "  db:seed [Nome]           Executa o seeder especificado ou a classe DatabaseSeeder\n";
         echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
+        echo "  make:component <Nome>    Cria um novo Componente HTMX reativo. Ex: table_users\n";
     }
 
     private function makeMigration(array $args): void
@@ -868,17 +869,15 @@ class Kernel
             exit(1);
         }
 
-        // Template Cru Básico para o HTMX
-        $content = <<<PHP
-<!-- Componente: {$classNameRaw} -->
-<div id="comp-{$classNameRaw}" class="component-wrapper">
-    <!-- 
-       O HTMX por padrão fará atualizações neste elemento 
-       ou você pode engatinhar aqui para responder a um hx-trigger 
-    -->
-    <p>Componente gerado via Forge CLI!</p>
-</div>
-PHP;
+        // Utiliza o novo template HTML .stub
+        $templatePath = $this->config['paths']['templates'] . '/component.stub';
+        if (!file_exists($templatePath)) {
+            echo "Erro: Template não encontrado em: $templatePath\n";
+            exit(1);
+        }
+
+        $content = file_get_contents($templatePath);
+        $content = str_replace('{{className}}', $classNameRaw, $content);
 
         file_put_contents($path, $content);
         

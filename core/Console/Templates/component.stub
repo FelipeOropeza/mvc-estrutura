@@ -1,0 +1,8 @@
+<!-- Componente: {{className}} -->
+<div id="comp-{{className}}" class="component-wrapper">
+    <!-- 
+       O HTMX por padrão fará atualizações neste elemento 
+       ou você pode engatinhar aqui para responder a um hx-trigger 
+    -->
+    <p>Componente gerado via Forge CLI!</p>
+</div>
