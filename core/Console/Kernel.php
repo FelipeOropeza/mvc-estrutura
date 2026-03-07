@@ -65,6 +65,18 @@ class Kernel
             case 'optimize:clear':
                 $this->clearOptimization($args);
                 break;
+            case 'migrate:refresh':
+                $this->migrateRefresh($args);
+                break;
+            case 'make:dto':
+                $this->makeDto($args);
+                break;
+            case 'make:seeder':
+                $this->makeSeeder($args);
+                break;
+            case 'db:seed':
+                $this->dbSeed($args);
+                break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
                 $this->showHelp();
@@ -91,6 +103,10 @@ class Kernel
         echo "  setup:auth               Instala o scaffolding completo de Autenticação (Login, Registro, DB)\n";
         echo "  optimize                 Compila as rotas e dependências para máxima performance\n";
         echo "  optimize:clear           Remove os arquivos de cache compilados\n";
+        echo "  make:dto <Nome>          Cria um Data Transfer Object. Ex: Admin/LoginDTO\n";
+        echo "  make:seeder <Nome>       Cria uma nova classe de Seeder. Ex: DatabaseSeeder\n";
+        echo "  db:seed [Nome]           Executa o seeder especificado ou a classe DatabaseSeeder\n";
+        echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
     }
 
     private function makeMigration(array $args): void
@@ -641,5 +657,187 @@ class Kernel
         $relativePath = str_replace('\\', '/', trim(str_replace(str_replace('\\', '/', __DIR__ . '/../../'), '', str_replace('\\', '/', $path)), '/'));
 
         echo "✅ $type criado em: $relativePath\n";
+    }
+
+    private function migrateRefresh(array $args): void
+    {
+        echo "Iniciando rollback das Migrations...\n========================\n";
+
+        $dbConfigPath = __DIR__ . '/../../config/database.php';
+        if (!file_exists($dbConfigPath)) {
+            echo "Erro: Arquivo config/database.php não encontrado.\n";
+            exit(1);
+        }
+        $dbConfigMaster = require $dbConfigPath;
+
+        $driver = getenv('DB_CONNECTION') ?: $dbConfigMaster['default'];
+        $dbConfig = $dbConfigMaster['connections'][$driver];
+
+        $pdoApp = null;
+        try {
+            if ($driver === 'mysql') {
+                $dsnApp = "mysql:host={$dbConfig['host']};port={$dbConfig['port']};dbname={$dbConfig['database']}";
+                $pdoApp = new \PDO($dsnApp, $dbConfig['username'], $dbConfig['password']);
+                $pdoApp->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            }
+        } catch (\PDOException $e) {
+            echo "Conexão falhou pular rollback (banco talvez não exista). Detalhe: " . $e->getMessage() . "\n";
+        }
+
+        if ($pdoApp) {
+            try {
+                // Pega as migrations na ordem reversa de execução (por batch ou id)
+                $stmt = $pdoApp->query("SELECT id, migration FROM migrations ORDER BY id DESC");
+                $ranMigrations = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+                if (!empty($ranMigrations)) {
+                    $dir = $this->config['paths']['migrations'] ?? __DIR__ . '/../../database/migrations';
+
+                    foreach ($ranMigrations as $row) {
+                        $file = $row['migration'];
+                        $path = $dir . '/' . $file;
+                        if (file_exists($path)) {
+                            $className = preg_replace('/^[0-9_]+_([a-zA-Z0-9]+)\.php$/', '$1', $file);
+                            require_once $path;
+
+                            $namespacedClass = "\\App\\Database\\Migrations\\$className";
+                            if (class_exists($namespacedClass)) {
+                                $className = $namespacedClass;
+                            }
+
+                            if (class_exists($className)) {
+                                $migration = new $className();
+                                if (method_exists($migration, 'down')) {
+                                    echo "[INFO] Rollback: $file\n";
+                                    $migration->down();
+                                }
+                            }
+                        }
+                    }
+
+                    $pdoApp->exec("TRUNCATE TABLE migrations");
+                    echo "\n✅ Rollback completado.\n\n";
+
+                } else {
+                    echo "Nenhuma migration rodada detectada para rollback.\n\n";
+                }
+            } catch (\PDOException $e) {
+                echo "A tabela 'migrations' não existe ou não foi criada ainda.\n\n";
+            }
+        }
+
+        // Roda up
+        $this->runMigrations($args);
+    }
+
+    private function makeDto(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome. Ex: make:dto Admin/RoleDTO\n";
+            exit(1);
+        }
+
+        $name = str_replace('\\', '/', $args[1]);
+        if (!str_ends_with($name, 'DTO')) {
+            $name .= 'DTO';
+        }
+
+        $parts = explode('/', $name);
+        $className = array_pop($parts);
+
+        $namespaceModifier = '';
+        $dir = realpath(__DIR__ . '/../../') . '/app/DTOs';
+
+        if (!empty($parts)) {
+            $namespaceModifier = '\\' . implode('\\', $parts);
+            $dir .= '/' . implode('/', $parts);
+        }
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $path = $dir . '/' . $className . '.php';
+
+        $content = $this->renderTemplate('dto', [
+            '{{namespaceModifier}}' => $namespaceModifier,
+            '{{className}}' => $className
+        ]);
+
+        $this->createFile($path, $content, "DTO '$className'");
+    }
+
+    private function makeSeeder(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome. Ex: make:seeder DatabaseSeeder\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        if (!str_ends_with($name, 'Seeder')) {
+            $name .= 'Seeder';
+        }
+
+        $dir = realpath(__DIR__ . '/../../') . '/database/seeders';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $path = $dir . '/' . $name . '.php';
+
+        $content = $this->renderTemplate('seeder', ['{{className}}' => $name]);
+
+        $this->createFile($path, $content, "Seeder '$name'");
+    }
+
+    private function dbSeed(array $args): void
+    {
+        $dir = realpath(__DIR__ . '/../../') . '/database/seeders';
+        if (!is_dir($dir)) {
+            echo "ERRO: A pasta de seeders ($dir) não existe. Crie um seeder com make:seeder.\n";
+            exit(1);
+        }
+
+        $seederName = $args[1] ?? null;
+
+        if ($seederName) {
+            $this->runSeeder($dir, $seederName);
+        } else {
+            if (file_exists($dir . '/DatabaseSeeder.php')) {
+                $this->runSeeder($dir, 'DatabaseSeeder');
+            } else {
+                echo "ERRO: O arquivo DatabaseSeeder não existe na pasta seeders e nenhum outro foi definido. Ex: db:seed MeuOutroSeeder\n";
+            }
+        }
+        echo "\n✅ Seeding concluído.\n";
+    }
+
+    private function runSeeder(string $dir, string $name): void
+    {
+        if (!str_ends_with($name, 'Seeder')) {
+            $name .= 'Seeder';
+        }
+
+        $path = $dir . '/' . $name . '.php';
+        if (!file_exists($path)) {
+            echo "Erro: Seeder '$name' não encontrado em: $path\n";
+            return;
+        }
+
+        require_once $path;
+        $className = "\\App\\Database\\Seeders\\$name";
+
+        if (class_exists($className)) {
+            echo "[INFO] Executando seeder: $name\n";
+            $seeder = new $className();
+            if (method_exists($seeder, 'run')) {
+                $seeder->run();
+            } else {
+                echo "❌ Método run() não encontrado na classe $className.\n";
+            }
+        } else {
+            echo "❌ Classe $className não encontrada no arquivo $path.\n";
+        }
     }
 }

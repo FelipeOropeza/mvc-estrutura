@@ -1,0 +1,12 @@
+<?php
+
+namespace App\DTOs{{namespaceModifier}};
+
+use Core\Validation\DataTransferObject;
+use Core\Attributes\Required;
+
+class {{className}} extends DataTransferObject
+{
+    // #[Required(message: 'Campo obrigatório.')]
+    // public string $exemplo;
+}
