@@ -11,6 +11,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@2.0.2"></script>
 
     <style>
         body {
@@ -153,9 +155,22 @@
             </div>
         <?php endif; ?>
 
-        <div class="code-block">
-            Para começar, edite este arquivo em:<br>
-            <strong class="text-primary">app/Views/home.php</strong>
+        <!-- Area de Componentes HTMX -->
+        <h5 class="mt-4 fw-bold" style="color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">
+           <i class="bi bi-lightning-charge-fill" style="color: #0ea5e9;"></i> Componentes HTMX
+        </h5>
+        
+        <p style="font-size: 0.9rem; margin-bottom: 10px;">
+           Você pode gerar componentes HTMX isolados e reativos rodando no terminal:
+           <code>php forge make:component NOME</code>
+        </p>
+
+        <!-- Renderizando o Componente Independente -->
+        <?php include 'components/demo_htmx.php' ?>
+
+        <div class="code-block mt-4">
+            Este componente está rodando via HTMX! Edite ele em:<br>
+            <strong class="text-primary">app/Views/components/demo_htmx.php</strong>
         </div>
 
         <div class="d-flex justify-content-center gap-3 flex-wrap">

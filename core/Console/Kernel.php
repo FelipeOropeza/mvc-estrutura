@@ -74,8 +74,8 @@ class Kernel
             case 'make:seeder':
                 $this->makeSeeder($args);
                 break;
-            case 'db:seed':
-                $this->dbSeed($args);
+            case 'make:component':
+                $this->makeComponent($args);
                 break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
@@ -833,11 +833,56 @@ class Kernel
             $seeder = new $className();
             if (method_exists($seeder, 'run')) {
                 $seeder->run();
-            } else {
-                echo "❌ Método run() não encontrado na classe $className.\n";
             }
-        } else {
-            echo "❌ Classe $className não encontrada no arquivo $path.\n";
         }
+    }
+
+    private function makeComponent(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome do componente. Ex: make:component tabela_usuarios\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+
+        // Certifica compatibilidade de views PHP
+        $engine = $this->config['app']['view_engine'] ?? 'php';
+        $extension = $engine === 'twig' ? '.twig' : '.php';
+        
+        $fileName = str_ends_with($name, $extension) ? $name : $name . $extension;
+        $classNameRaw = str_replace($extension, '', $fileName);
+
+        // Preparamos a pasta 'components' dentro de 'views' globalmente
+        $viewsDir = rtrim($this->config['paths']['views'], '/');
+        $componentsDir = $viewsDir . '/components';
+        
+        if (!is_dir($componentsDir)) {
+            mkdir($componentsDir, 0777, true);
+        }
+
+        $path = $componentsDir . '/' . $fileName;
+
+        if (file_exists($path)) {
+            echo "Erro: Componente '$fileName' já existe.\n";
+            exit(1);
+        }
+
+        // Template Cru Básico para o HTMX
+        $content = <<<PHP
+        <!-- Componente: {$classNameRaw} -->
+        <div id="comp-{$classNameRaw}" class="component-wrapper">
+            <!-- 
+               O HTMX por padrão fará atualizações neste elemento 
+               ou você pode engatinhar aqui para responder a um hx-trigger 
+            -->
+            <p>Componente gerado via Forge CLI!</p>
+        </div>
+        PHP;
+
+        file_put_contents($path, $content);
+        
+        echo "✅ Componente HTMX '$fileName' criado em: app/Views/components/$fileName\n";
+        echo "💡 Dica de uso na View: include('components/{$classNameRaw}') \n";
     }
 }

@@ -50,7 +50,8 @@ class PhpEngine implements EngineInterface
             }
 
             // 1. Resolve Layouts: Se essa view solicitou um Layout ('main'), ele assume!
-            if ($this->layout !== null) {
+            // Se for uma requisição HTMX (fragmento), pulamos o layout principal para retornar apenas o pedaço atualizado
+            if ($this->layout !== null && !request()->isHtmx()) {
                 $layoutPath = $this->resolvePath($this->layout);
                 // Permite a view filha enviar dados especificos de header/title extra para o Layout
                 $layoutMergedData = array_merge($data, $this->layoutData);
@@ -59,13 +60,23 @@ class PhpEngine implements EngineInterface
                     extract($layoutMergedData);
                     ob_start();
                     require $layoutPath;
-                    return (string) ob_get_clean();
+                    $finalResult = (string) ob_get_clean();
+
+                    // RESET DE ESTADO PARA O WORKER MODE (FrankenPHP/Swoole)
+                    $this->resetState();
+
+                    return $finalResult;
                 }
 
+                // RESET DE ESTADO PARA O WORKER MODE
+                $this->resetState();
                 return "Erro: Layout '{$this->layout}' não encontrado.";
             }
 
-            // Sem layout mestre, só imprime a própria view formatada
+            // RESET DE ESTADO PARA O WORKER MODE
+            $this->resetState();
+
+            // Sem layout mestre ou fragmento via HTMX, só imprime a própria view formatada
             return (string) $content;
         }
 
@@ -136,5 +147,18 @@ class PhpEngine implements EngineInterface
             $view .= '.php';
         }
         return $this->viewPath . DIRECTORY_SEPARATOR . $view;
+    }
+
+    /**
+     * Zera o estado da Engine de Template.
+     * EXTREMAMENTE NECESSÁRIO para instâncias compartilhadas em Worker Modes (FrankenPHP)
+     * onde o Container reaproveita a engine, senão sections de views antigas vazariam.
+     */
+    private function resetState(): void
+    {
+        $this->layout = null;
+        $this->layoutData = [];
+        $this->sections = [];
+        $this->currentSection = null;
     }
 }

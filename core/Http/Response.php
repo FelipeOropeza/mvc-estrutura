@@ -111,4 +111,31 @@ class Response
             ['Content-Type' => 'application/json']
         );
     }
+
+    /**
+     * Adiciona o cabeçalho HX-Trigger para disparar um evento no front-end via HTMX
+     */
+    public function hxTrigger(string|array $events): self
+    {
+        if (is_array($events)) {
+            $events = json_encode($events);
+        }
+        return $this->setHeader('HX-Trigger', $events);
+    }
+
+    /**
+     * Redireciona via HTMX pelo lado do front-end
+     */
+    public function hxRedirect(string $url): self
+    {
+        return $this->setHeader('HX-Redirect', $url);
+    }
+
+    /**
+     * Instrui o HTMX a recarregar a página inteira
+     */
+    public function hxRefresh(): self
+    {
+        return $this->setHeader('HX-Refresh', 'true');
+    }
 }

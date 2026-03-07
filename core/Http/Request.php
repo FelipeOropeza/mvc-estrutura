@@ -135,4 +135,12 @@ class Request
     {
         return $this->session;
     }
+
+    /**
+     * Verifica se a requisição foi feita pelo HTMX
+     */
+    public function isHtmx(): bool
+    {
+        return isset($this->server['HTTP_HX_REQUEST']) && $this->server['HTTP_HX_REQUEST'] === 'true';
+    }
 }
