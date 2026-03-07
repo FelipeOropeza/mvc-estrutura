@@ -23,6 +23,9 @@ abstract class Model
     /** @var bool Ativa/Desativa controle automático das colunas created_at e updated_at */
     public bool $timestamps = true;
 
+    /** @var bool Ativa/Desativa a filtragem e deleção via soft deletes */
+    public bool $softDeletes = false;
+
     public function __construct()
     {
         $this->db = Connection::getInstance();
@@ -143,7 +146,15 @@ abstract class Model
      */
     public function find(mixed $id): ?static
     {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1");
+        $sql = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id";
+        
+        if (property_exists($this, 'softDeletes') && $this->softDeletes) {
+            $sql .= " AND deleted_at IS NULL";
+        }
+        
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id);
         $stmt->execute();
         $stmt->setFetchMode(PDO::FETCH_CLASS, static::class);
@@ -226,6 +237,15 @@ abstract class Model
      */
     public function delete(mixed $id): bool
     {
+        if (property_exists($this, 'softDeletes') && $this->softDeletes) {
+            $sql = "UPDATE {$this->table} SET deleted_at = :deleted_at WHERE {$this->primaryKey} = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':id', $id);
+            $stmt->bindValue(':deleted_at', date('Y-m-d H:i:s'));
+            
+            return $stmt->execute();
+        }
+
         $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id);
@@ -253,7 +273,13 @@ abstract class Model
      */
     public function newQuery(): QueryBuilder
     {
-        return new QueryBuilder($this->db, $this->table, static::class);
+        $query = new QueryBuilder($this->db, $this->table, static::class);
+        
+        if (property_exists($this, 'softDeletes') && $this->softDeletes) {
+            $query->whereNull("{$this->table}.deleted_at");
+        }
+        
+        return $query;
     }
 
     /**

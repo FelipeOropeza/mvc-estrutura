@@ -870,15 +870,15 @@ class Kernel
 
         // Template Cru Básico para o HTMX
         $content = <<<PHP
-        <!-- Componente: {$classNameRaw} -->
-        <div id="comp-{$classNameRaw}" class="component-wrapper">
-            <!-- 
-               O HTMX por padrão fará atualizações neste elemento 
-               ou você pode engatinhar aqui para responder a um hx-trigger 
-            -->
-            <p>Componente gerado via Forge CLI!</p>
-        </div>
-        PHP;
+<!-- Componente: {$classNameRaw} -->
+<div id="comp-{$classNameRaw}" class="component-wrapper">
+    <!-- 
+       O HTMX por padrão fará atualizações neste elemento 
+       ou você pode engatinhar aqui para responder a um hx-trigger 
+    -->
+    <p>Componente gerado via Forge CLI!</p>
+</div>
+PHP;
 
         file_put_contents($path, $content);
         

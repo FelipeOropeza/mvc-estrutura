@@ -11,12 +11,9 @@ class AuthController
 {
     private \App\Services\AuthService $authService;
 
-    public function __construct()
+    public function __construct(\App\Services\AuthService $authService)
     {
-        // No mundo PHP MVC Raiz com Injeção de Dependências, 
-        // poderíamos fazer o PHP Auto-Wiring instanciar as DTOs e este Service. 
-        // Mas por clareza do boiler, instanciamos na mão caso o seu IoC Container esteja inativo.
-        $this->authService = app(\App\Services\AuthService::class);
+        $this->authService = $authService;
     }
 
     public function loginForm()

@@ -36,8 +36,6 @@ class HomeController extends Controller
         return view('home', $data);
     }
 
-
-    #[Get('/api/comp-clique')]
     #[Post('/api/comp-clique')]
     public function updateComponent()
     {

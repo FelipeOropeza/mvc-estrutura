@@ -13,6 +13,7 @@ Um esqueleto PHP puro, ultra-leve e focado em performance (Stateless). Construí
 * **Database Avançado (ORM)**: Modelos trazem um `QueryBuilder` embutido para queries complexas fluidas, Suporte a Relacionamentos (`belongsTo`, `hasMany`), e Gatilhos de Mutação e Validação acoplados.
 * **Upload Seguro e Storage**: Abstração Orientada a Objetos robusta para manipulação e validação de `UploadedFile`.
 * **Segurança e Log de Falhas**: Exceções são silenciadas no arquivo `storage/logs/app.log` se o modo de debug estiver inativo (`APP_DEBUG=false`), blindando a visão do usuário final num Deploy de Produção.
+* **Suporte Nativo ao HTMX**: Métodos utilitários nativos de Request e Response (`isHtmx()`, `hxTrigger()`), além de motor PHP capaz de isolar renderização de componentes parciais (pular Layout Mestre).
 * **CLI (Forge)**: Uma ferramenta de console robusta e extensível para criar código pré-fabricado, regras customizadas e rodar migrações.
 
 ## Documentação
@@ -69,6 +70,7 @@ Acesse `http://localhost:8000` no seu navegador.
 php forge make:controller NomeController
 php forge make:model TabelaModel
 php forge make:view secao/nova-view
+php forge make:component nome_componente
 php forge make:migration CreateUsersTable
 php forge make:middleware VerificarAcessoMiddleware
 php forge make:rule CpfValido

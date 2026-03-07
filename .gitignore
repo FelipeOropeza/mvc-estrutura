@@ -4,3 +4,4 @@ vendor/
 .agent/
 .env
 .cache/
+storage/framework/
