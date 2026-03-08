@@ -66,3 +66,18 @@ class User extends Model {
     protected array $fillable = ['email', 'password'];
 }
 ```
+
+## Contagem de Registros (Eficiência)
+Evite trazer todos os registros do banco apenas para contar (`count($model->all())`). Use o método nativo que executa um `SELECT COUNT(*)` diretamente no SQL:
+
+```php
+$totalProdutos = (new Produto())->count();
+
+// Contagem filtrada
+$ativos = (new Produto())->where('ativo', '1')->count();
+
+// Contagem em joins
+$totalComCategoria = (new Produto())
+    ->join('categorias', 'categorias.id = produtos.categoria_id')
+    ->count();
+```

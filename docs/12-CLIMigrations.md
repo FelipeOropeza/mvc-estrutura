@@ -23,6 +23,11 @@ php forge setup:auth               # Instala um sistema MVC de Autenticação ba
 php forge setup:engine twig        # Migra o projeto entre Php/Twig como View padrão do Front   
 php forge optimize                 # Compila Rotas e Arquivos no Cache acelerando em até 10x
 php forge optimize:clear           # Limpa a compilação do Cache e do Optimize 
+
+# Ambiente de Desenvolvimento:
+php forge serve                    # Inicia o servidor local inteligente com logs limpos
+php forge serve --port=9000        # Inicia em uma porta específica
+php forge serve --debug           # Inicia exibindo os logs detalhados do PHP
 ```
 
 ## Migrations e Schema Builder

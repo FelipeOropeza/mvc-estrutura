@@ -29,6 +29,7 @@ class AuthMiddleware
 No arquivo `config/middleware.php`, nós gerimos como o sistema injeta ou agrupa filtros ao redor de rotas.
 * **globais:** Rodam em todas as rotas (Como Iniciador de Sessões e tratamento CORS).
 * **aliases:** Exemplo: Associar a string `'auth'` à classe `AuthMiddleware::class`. Isso permite chamar na rota: `->middleware('auth')`.
+* **admin:** O scaffold `php forge setup:auth` já cria o `AdminMiddleware::class` para você gerenciar permissões de cargo/role de forma simples.
 * **groups:** Agrupar middlewares para blocos de rotas parecidas (ex: `web` para Views HTML contendo proteção CSRF, ou `api` para Endpoints).
 
 Exemplo de uso na Rota (com array ou apelidos):

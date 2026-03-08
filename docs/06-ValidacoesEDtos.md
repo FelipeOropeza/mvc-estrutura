@@ -33,6 +33,16 @@ class RegistroDTO extends DataTransferObject
     #[MatchField('password', 'As senhas não conferem')]
     public ?string $password_confirm = null;
 
+    // Garante que o valor seja único no Banco de Dados
+    // Útil para e-mails, usernames ou CPFs
+    #[Required]
+    #[Unique(table: 'usuarios', column: 'email', message: 'Este e-mail já está em uso.')]
+    public ?string $email_cadastro = null;
+
+    // Para EDIÇÃO: ignore o ID do próprio registro sendo editado
+    #[Unique(table: 'usuarios', column: 'email', ignore: 'id')]
+    public ?string $email_edicao = null;
+
     // (Opcional) Retorne false para barrar a requisição com 403 antes mesmo 
     // das regras passarem! Ideal para checar cargo/ACL
     protected function authorize(): bool {

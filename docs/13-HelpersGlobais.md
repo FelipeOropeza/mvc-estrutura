@@ -9,3 +9,4 @@ Atalhos diretos da Programação para facilitar implementações cruciais.
 * `old('nome_do_campo')`: Recupera lógicas mal preenchidas.
 * `errors('nome_do_campo')`: Apresenta erros do Validator em tempo real na Interface da WEB.
 * `route('nome_da_rota')`: Transforma um "Name" gerado no Web.php numa String de Domínio real com Query Params processados se necessário.
+* `storage_url('path/to/file.jpg')`: Gera a URL pública para arquivos na pasta `/storage`. Essencial para exibir imagens enviadas por upload.
