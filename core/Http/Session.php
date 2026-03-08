@@ -120,4 +120,19 @@ class Session
 
         return (string) $this->get('_token');
     }
+
+    /**
+     * Regenera o ID da sessão para prevenir Session Fixation attacks.
+     * SEMPRE chame isso após um login bem-sucedido.
+     *
+     * @param bool $deleteOld Se true, apaga os dados da sessão antiga (mais seguro)
+     */
+    public function regenerate(bool $deleteOld = true): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id($deleteOld);
+            // Regenera também o CSRF token para invalidar o token da sessão anterior
+            $this->set('_token', bin2hex(random_bytes(32)));
+        }
+    }
 }

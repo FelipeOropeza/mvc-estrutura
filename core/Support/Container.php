@@ -167,10 +167,12 @@ class Container
      */
     public function call(array|callable $action, array $parameters = []): mixed
     {
-        // Se a rota for só uma Closure simples (Ex: Route::get('/foo', function(){}))
-        if (is_callable($action) && !is_array($action)) {
-            // Futuramente poderíamos injetar a respsota de \Closure com `ReflectionFunction`. Para iniciar simples:
-            return call_user_func_array($action, array_values($parameters));
+        // Se a rota for só uma Closure (Ex: Route::get('/foo', function(Request $req){}))
+        if ($action instanceof \Closure || (is_callable($action) && !is_array($action))) {
+            $reflector    = new \ReflectionFunction(\Closure::fromCallable($action));
+            $dependencies = $reflector->getParameters();
+            $args         = $this->resolveMethodDependencies($dependencies, $parameters);
+            return $reflector->invokeArgs($args);
         }
 
         // O Padrão normal do Micro Framework: Array com a Action do Controller

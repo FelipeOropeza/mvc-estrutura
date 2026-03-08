@@ -51,13 +51,12 @@ class Validator
                 $value = $mutator->mutate($name, $value);
             }
 
-            // Se não deu erro, higienizamos o dado para guardar limpo
+            // Se não deu erro, armazena o dado limpo
+            // IMPORTANTE: NÃO aplicamos htmlspecialchars aqui.
+            // O escape de HTML pertence à camada de saída (Views), não de entrada.
+            // Use o helper e($variavel) nas views para exibir dados do usuário com segurança.
             if (!isset($this->errors[$name])) {
-                if ($value instanceof \Core\Http\UploadedFile) {
-                    $this->data[$name] = $value;
-                } else {
-                    $this->data[$name] = is_string($value) ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : $value;
-                }
+                $this->data[$name] = $value;
             }
         }
 
