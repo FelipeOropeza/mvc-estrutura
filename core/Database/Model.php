@@ -201,7 +201,7 @@ abstract class Model
             $data['updated_at'] = $now;
         }
 
-        $columns = implode(', ', array_keys($data));
+        $columns = '`' . implode('`, `', array_keys($data)) . '`';
         // Cria os placeholders (:nome, :email)
         $placeholders = ':' . implode(', :', array_keys($data));
 

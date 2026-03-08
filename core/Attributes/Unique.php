@@ -11,35 +11,39 @@ use Core\Database\Connection;
 #[Attribute]
 class Unique implements ValidationRule
 {
-    /**
-     * @param string $table O nome da tabela para verificar
-     * @param string $column O nome da coluna (ex: email)
-     * @param string|null $ignore O nome do campo do DTO que contém o ID a ser ignorado (ex: 'id')
-     * @param string|null $message Mensagem customizada de erro
-     */
     public function __construct(
         private string $table,
         private string $column,
         private ?string $ignore = null,
-        private ?string $message = null
+        private ?string $message = null,
+        private array $where = []
     ) {}
 
     public function validate(string $attribute, mixed $value, array $allData = []): ?string
     {
-        if ($value === null || $value === '') {
+        if ($value === null || $value === "") {
             return null;
         }
 
         $db = Connection::getInstance();
-        
-        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE {$this->column} = :value";
-        $params = ['value' => $value];
+
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE `{$this->column}` = :value";
+        $params = ["value" => $value];
 
         // Se passarmos um campo pra ignorar (ex: 'id' em um Update), ele busca no array de dados
         if ($this->ignore && isset($allData[$this->ignore])) {
-            // Em cenários de edição, o ignore costuma ser a chave primária 'id'
-            $sql .= " AND {$this->ignore} != :ignore";
-            $params['ignore'] = $allData[$this->ignore];
+            $sql .= " AND `{$this->ignore}` != :ignore";
+            $params["ignore"] = $allData[$this->ignore];
+        }
+
+        // Condições extras (ex: onde usuario_id = x)
+        foreach ($this->where as $dbColumn => $dtoField) {
+            // Se o valor existe no DTO, usamos ele. Caso contrário, usamos o valor literal do array
+            $whereValue = $allData[$dtoField] ?? $dtoField;
+            $paramName = "where_" . str_replace(".", "_", $dbColumn);
+
+            $sql .= " AND `{$dbColumn}` = :{$paramName}";
+            $params[$paramName] = $whereValue;
         }
 
         $stmt = $db->prepare($sql);

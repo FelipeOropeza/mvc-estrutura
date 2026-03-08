@@ -23,6 +23,9 @@ class AuthService
             fail_validation(['email' => 'As credenciais informadas são inválidas.']);
         }
 
+        // SEMPRE regenerar a sessão após login bem-sucedido (Prevenção de Session Fixation)
+        session()->regenerate();
+
         return $usuario;
     }
 
