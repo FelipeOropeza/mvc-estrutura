@@ -7,7 +7,7 @@ use Core\Attributes\Route\Get;
 
 class HomeController extends Controller
 {
-    #[Get('/home')]
+    #[Get('/')]
     public function index()
     {
         $data = [

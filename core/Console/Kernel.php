@@ -96,21 +96,21 @@ class Kernel
         echo "  make:controller <Nome>   Cria um novo Controller\n";
         echo "  make:model <Nome>        Cria um novo Model\n";
         echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
+        echo "  make:component <Nome>    Cria um novo Componente HTMX reativo. Ex: table_users\n";
         echo "  make:service <Nome>      Cria um novo Service de regra de negócio para injetar. Ex: UserService\n";
         echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados. Ex: CreateUsersTable\n";
         echo "  make:middleware <Nome>   Cria um novo Middleware de validação. Ex: AuthMiddleware\n";
         echo "  make:rule <Nome>         Cria um atributo de Validação customizado. Ex: CpfValido\n";
         echo "  make:mutator <Nome>      Cria um atributo de Mutação customizado. Ex: LimpaCpf\n";
+        echo "  make:dto <Nome>          Cria um Data Transfer Object. Ex: Admin/LoginDTO\n";
+        echo "  make:seeder <Nome>       Cria uma nova classe de Seeder. Ex: DatabaseSeeder\n";
         echo "  migrate                  Gera o Banco de Dados ausente (se possível) e roda as Migrations\n";
+        echo "  db:seed [Nome]           Executa o seeder especificado ou a classe DatabaseSeeder\n";
+        echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
         echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
         echo "  setup:auth               Instala o scaffolding completo de Autenticação (Login, Registro, DB)\n";
         echo "  optimize                 Compila as rotas e dependências para máxima performance\n";
         echo "  optimize:clear           Remove os arquivos de cache compilados\n";
-        echo "  make:dto <Nome>          Cria um Data Transfer Object. Ex: Admin/LoginDTO\n";
-        echo "  make:seeder <Nome>       Cria uma nova classe de Seeder. Ex: DatabaseSeeder\n";
-        echo "  db:seed [Nome]           Executa o seeder especificado ou a classe DatabaseSeeder\n";
-        echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
-        echo "  make:component <Nome>    Cria um novo Componente HTMX reativo. Ex: table_users\n";
         echo "  serve                    Inicia o servidor de desenvolvimento local\n";
     }
 
@@ -577,7 +577,7 @@ class Kernel
         // 4.9 AuthMiddleware (Verificação de Login)
         $middlewareDir = $this->config['paths']['middlewares'] ?? $baseDir . '/app/Middleware';
         if (!is_dir($middlewareDir)) mkdir($middlewareDir, 0777, true);
-        
+
         $authMiddlewarePath = $middlewareDir . '/AuthMiddleware.php';
         if (!file_exists($authMiddlewarePath)) {
             $code = file_get_contents("$authTemplatesDir/auth_middleware.stub");
@@ -733,7 +733,6 @@ class Kernel
 
                     $pdoApp->exec("TRUNCATE TABLE migrations");
                     echo "\n✅ Rollback completado.\n\n";
-
                 } else {
                     echo "Nenhuma migration rodada detectada para rollback.\n\n";
                 }
@@ -865,14 +864,14 @@ class Kernel
         // Certifica compatibilidade de views PHP
         $engine = $this->config['app']['view_engine'] ?? 'php';
         $extension = $engine === 'twig' ? '.twig' : '.php';
-        
+
         $fileName = str_ends_with($name, $extension) ? $name : $name . $extension;
         $classNameRaw = str_replace($extension, '', $fileName);
 
         // Preparamos a pasta 'components' dentro de 'views' globalmente
         $viewsDir = rtrim($this->config['paths']['views'], '/');
         $componentsDir = $viewsDir . '/components';
-        
+
         if (!is_dir($componentsDir)) {
             mkdir($componentsDir, 0777, true);
         }
@@ -895,7 +894,7 @@ class Kernel
         $content = str_replace('{{className}}', $classNameRaw, $content);
 
         file_put_contents($path, $content);
-        
+
         echo "✅ Componente HTMX '$fileName' criado em: app/Views/components/$fileName\n";
         echo "💡 Dica de uso na View: include('components/{$classNameRaw}') \n";
     }
@@ -934,7 +933,7 @@ class Kernel
         if ($handle) {
             while (!feof($handle)) {
                 $line = fgets($handle);
-                
+
                 if ($line === false) {
                     break;
                 }
@@ -946,7 +945,7 @@ class Kernel
 
                 // Exibe o log (Respostas HTTP, Erros, etc)
                 echo $line;
-                
+
                 // Tenta forçar a saída para o terminal imediatamente
                 if (ob_get_level() > 0) ob_flush();
                 flush();
