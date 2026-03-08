@@ -31,11 +31,8 @@ class Request
     protected function normalizeFiles(array $files): array
     {
         $normalized = [];
-
         foreach ($files as $key => $file) {
-            // Ignorar arrays de arquivos multiplos no momento, suportar apenas single upload
             if (isset($file['name'], $file['type'], $file['tmp_name'], $file['error'], $file['size']) && is_string($file['name'])) {
-                // Só empacota se realmente um arquivo foi enviado na request
                 if ($file['error'] !== UPLOAD_ERR_NO_FILE) {
                     $normalized[$key] = new UploadedFile(
                         $file['tmp_name'],
@@ -47,7 +44,6 @@ class Request
                 }
             }
         }
-
         return $normalized;
     }
 
@@ -73,14 +69,12 @@ class Request
     public function all(): array
     {
         $contentType = $this->server['CONTENT_TYPE'] ?? '';
-
         if (str_contains($contentType, 'application/json')) {
             $json = json_decode($this->content, true);
             if (is_array($json)) {
-                return $json; // APIs não enviam $_FILES via JSON puro, então apenas retornamos o json
+                return $json;
             }
         }
-
         return array_merge($this->query, $this->post, $this->files);
     }
 
@@ -99,11 +93,9 @@ class Request
     {
         $uri = parse_url($this->server['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $scriptName = dirname($this->server['SCRIPT_NAME'] ?? '');
-
         if ($scriptName !== '/' && strpos((string) $uri, (string) $scriptName) === 0) {
             $uri = substr((string) $uri, strlen((string) $scriptName));
         }
-
         return '/' . trim((string) $uri, '/');
     }
 
@@ -114,7 +106,6 @@ class Request
     {
         $accept = $this->server['HTTP_ACCEPT'] ?? '';
         $contentType = $this->server['CONTENT_TYPE'] ?? '';
-
         return str_contains($accept, 'application/json') || str_contains($contentType, 'application/json');
     }
 
@@ -142,5 +133,22 @@ class Request
     public function isHtmx(): bool
     {
         return isset($this->server['HTTP_HX_REQUEST']) && $this->server['HTTP_HX_REQUEST'] === 'true';
+    }
+
+    /**
+     * Verifica se a requisição foi feita via AJAX (XMLHttpRequest)
+     */
+    public function isAjax(): bool
+    {
+        return isset($this->server['HTTP_X_REQUESTED_WITH']) && $this->server['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+    }
+
+    /**
+     * Retorna o valor de um cabeçalho da requisição
+     */
+    public function header(string $key, mixed $default = null): mixed
+    {
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
+        return $this->server[$key] ?? $default;
     }
 }

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Core\Http;
 
-use Core\View\PhpEngine;
-use Core\View\TwigEngine;
 use Core\View\EngineInterface;
 
 abstract class Controller
@@ -19,7 +17,6 @@ abstract class Controller
 
     protected function view(string $view, array $data = []): void
     {
-        // Usa Singleton do container - Otimizado para Worker Mode sem I/O de disco
         $this->engine->render($view, $data);
     }
 }

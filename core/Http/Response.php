@@ -60,27 +60,27 @@ class Response
     }
 
     /**
-     * Responde como JSON (Imediato, para legado)
+     * Define o conteúdo da resposta como JSON
      */
-    public function json(array|object $data, int $status = 200): void
+    public function json(array|object $data, int $status = 200): self
     {
         $this->setContent(json_encode($data, JSON_UNESCAPED_UNICODE));
         $this->setStatusCode($status);
         $this->setHeader('Content-Type', 'application/json');
 
-        $this->send();
+        return $this;
     }
 
     /**
      * Redireciona para outra URL
      */
-    public function redirect(string $url): void
+    public function redirect(string $url): self
     {
         $this->setContent('');
         $this->setStatusCode(302);
         $this->setHeader('Location', $url);
 
-        $this->send();
+        return $this;
     }
 
     /**

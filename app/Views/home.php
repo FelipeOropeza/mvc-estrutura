@@ -143,41 +143,11 @@
             validação limpa e a velocidade que você merece.
         </p>
 
-        <?php if (isset($name)): ?>
-            <div class="alert alert-success bg-success bg-opacity-10 border-0 text-success fw-medium mb-4">
-                Olá, <?= htmlspecialchars($name) ?>! Os dados do Controller estão chegando com sucesso.
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($status) && $status === true): ?>
-            <div class="alert alert-info bg-info bg-opacity-10 border-0 text-info fw-medium mb-4">
-                <i class="bi bi-magic pe-2"></i><strong>Injeção de Dependências</strong> funcionando perfeitamente via Service Layer!
-            </div>
-        <?php endif; ?>
-
-        <!-- Area de Componentes HTMX -->
-        <h5 class="mt-4 fw-bold" style="color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">
-           <i class="bi bi-lightning-charge-fill" style="color: #0ea5e9;"></i> Componentes HTMX
-        </h5>
-        
-        <p style="font-size: 0.9rem; margin-bottom: 10px;">
-           Você pode gerar componentes HTMX isolados e reativos rodando no terminal:
-           <code>php forge make:component NOME</code>
-        </p>
-
-        <!-- Renderizando o Componente Independente -->
-        <?php include 'components/demo_htmx.php' ?>
-
-        <div class="code-block mt-4">
-            Este componente está rodando via HTMX! Edite ele em:<br>
-            <strong class="text-primary">app/Views/components/demo_htmx.php</strong>
-        </div>
-
         <div class="d-flex justify-content-center gap-3 flex-wrap">
             <a href="https://github.com/FelipeOropeza/mvc-estrutura" target="_blank" class="btn-custom">
                 <i class="bi bi-github"></i> Código Fonte
             </a>
-            <a href="#" class="btn-custom btn-outline">
+            <a href="https://github.com/FelipeOropeza/mvc-estrutura/blob/main/docs/framework.md" target="_blank" class="btn-custom btn-outline">
                 <i class="bi bi-book"></i> Documentação
             </a>
         </div>

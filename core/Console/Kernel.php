@@ -574,15 +574,15 @@ class Kernel
             echo "✅ Migration: Tabela de 'usuarios' criada.\n";
         }
 
-        // 4.9 AdminMiddleware (Permissões)
+        // 4.9 AuthMiddleware (Verificação de Login)
         $middlewareDir = $this->config['paths']['middlewares'] ?? $baseDir . '/app/Middleware';
         if (!is_dir($middlewareDir)) mkdir($middlewareDir, 0777, true);
         
-        $adminMiddlewarePath = $middlewareDir . '/AdminMiddleware.php';
-        if (!file_exists($adminMiddlewarePath)) {
-            $code = file_get_contents("$authTemplatesDir/admin_middleware.stub");
-            file_put_contents($adminMiddlewarePath, $code);
-            echo "✅ Middleware: AdminMiddleware para permissões criado.\n";
+        $authMiddlewarePath = $middlewareDir . '/AuthMiddleware.php';
+        if (!file_exists($authMiddlewarePath)) {
+            $code = file_get_contents("$authTemplatesDir/auth_middleware.stub");
+            file_put_contents($authMiddlewarePath, $code);
+            echo "✅ Middleware: AuthMiddleware de sessão criado.\n";
         }
 
         // 5. Views
