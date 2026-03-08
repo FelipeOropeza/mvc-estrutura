@@ -6,6 +6,7 @@ namespace Core\Database;
 
 use PDO;
 
+#[\AllowDynamicProperties]
 abstract class Model
 {
     /** @var PDO */
@@ -280,6 +281,14 @@ abstract class Model
         }
         
         return $query;
+    }
+
+    /**
+     * Retorna a contagem de registros baseada na query.
+     */
+    public function count(string $column = '*'): int
+    {
+        return $this->newQuery()->count($column);
     }
 
     /**

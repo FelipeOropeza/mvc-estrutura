@@ -61,6 +61,11 @@ class Handler
      */
     public function renderException(Throwable $exception): \Core\Http\Response
     {
+        // 1. Limpa qualquer buffer de saída que possa estar aberto (evita erro "sujo" dentro de layouts/views)
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         // Descobre o código de status HTTP (padrão 500 se não reconhecido)
         $code = $exception->getCode();
         if ($code < 100 || $code >= 600) {
@@ -109,7 +114,16 @@ class Handler
         } elseif ($isApi) {
             return $this->renderJson($exception, (int) $code, (bool) $debug);
         } else {
-            return $this->renderHtml($exception, (int) $code, (bool) $debug);
+            $response = $this->renderHtml($exception, (int) $code, (bool) $debug);
+
+            // Se for uma requisição HTMX que deu erro, forçamos o Retarget para o Body
+            // Isso garante que o erro apareça em "tela cheia" e não apenas dentro de um componente
+            if (function_exists('request') && request()->isHtmx()) {
+                $response->setHeader('HX-Retarget', 'body');
+                $response->setHeader('HX-Reswap', 'innerHTML');
+            }
+
+            return $response;
         }
     }
 
@@ -156,28 +170,65 @@ class Handler
     private function renderHtml(Throwable $exception, int $code, bool $debug): \Core\Http\Response
     {
         if ($debug) {
-            // Tela de erro detalhada para desenvolvimento
-            $content = '<style>
-                body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; color: #111827; margin: 0; padding: 2rem; }
-                .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-                h1 { color: #dc2626; margin-top: 0; font-size: 1.5rem; word-break: break-all; }
-                .meta { background: #fef2f2; color: #991b1b; padding: 1rem; border-radius: 4px; margin-bottom: 2rem; font-weight: 500; font-size: 1.125rem;}
-                .file { background: #f9fafb; padding: 1rem; border-radius: 4px; border-left: 4px solid #9ca3af; margin-bottom: 1rem; word-break: break-all; color: #4b5563;}
-                .trace { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.875rem; line-height: 1.5; }
-            </style>';
-            $content .= '<div class="container">';
-            $content .= "<h1>" . get_class($exception) . "</h1>";
-            $content .= "<div class='meta'>Mensagem: " . htmlspecialchars($exception->getMessage()) . "</div>";
-            $content .= "<div class='file'><strong>Arquivo:</strong> " . $exception->getFile() . " <br><strong>Linha:</strong> " . $exception->getLine() . "</div>";
-            $content .= "<h3>Stack Trace:</h3>";
-            $content .= "<pre class='trace'>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>";
-            $content .= '</div>';
+            // Tela de erro detalhada e AESTHETIC para desenvolvimento
+            $content = '
+            <!DOCTYPE html>
+            <html lang="pt-br">
+            <head>
+                <meta charset="UTF-8">
+                <title>Erro de Execução :: MVC Base</title>
+                <style>
+                    :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --danger: #ef4444; --accent: #38bdf8; }
+                    body { font-family: "Inter", system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 2rem; line-height: 1.5; }
+                    .container { max-width: 1100px; margin: 0 auto; }
+                    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; }
+                    h1 { color: var(--danger); font-size: 1.25rem; margin: 0; font-family: monospace; }
+                    .status { background: #fee2e2; color: #b91c1c; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: bold; }
+                    .error-box { background: var(--card); border-radius: 12px; padding: 2rem; border-left: 6px solid var(--danger); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); margin-bottom: 2rem; }
+                    .message { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; }
+                    .location { color: var(--muted); font-family: monospace; font-size: 0.95rem; border: 1px solid #334155; padding: 0.75rem; border-radius: 6px; background: #0f172a; }
+                    .location strong { color: var(--accent); }
+                    .trace-title { display: flex; align-items: center; gap: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; font-weight: bold; }
+                    .trace { background: #020617; color: #cbd5e1; padding: 1.5rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; font-family: "Fira Code", "Cascadia Code", monospace; border: 1px solid #334155; white-space: pre-wrap; word-break: break-all; }
+                    .stack-line { color: #475569; margin-right: 0.5rem; user-select: none; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>' . get_class($exception) . '</h1>
+                        <span class="status">HTTP ' . $code . '</span>
+                    </div>
+                    
+                    <div class="error-box">
+                        <div class="message">' . htmlspecialchars($exception->getMessage()) . '</div>
+                        <div class="location">
+                            <strong>Local:</strong> ' . $exception->getFile() . ' <strong>na linha</strong> ' . $exception->getLine() . '
+                        </div>
+                    </div>
+
+                    <div class="trace-title">
+                        <span>Stack Trace</span>
+                    </div>
+                    <pre class="trace">' . htmlspecialchars($exception->getTraceAsString()) . '</pre>
+                    
+                    <footer style="margin-top: 3rem; text-align: center; color: var(--muted); font-size: 0.875rem;">
+                        MVC Base Engineering &bull; Debug Mode Active
+                    </footer>
+                </div>
+            </body>
+            </html>';
         } else {
-            // Tela genérica de erro para o usuário em Produção
-            $content = "<div style='font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 100px 20px;'>";
-            $content .= "<h1 style='color: #374151; font-size: 6rem; margin: 0;'>$code</h1>";
-            $content .= "<p style='color: #6b7280; font-size: 1.5rem; margin-top: 10px;'>Ocorreu um erro inesperado.</p>";
-            $content .= "</div>";
+            // Tela genérica de erro para o usuário em Produção (Clean & Pro)
+            $content = "
+            <body style='font-family: system-ui, sans-serif; background: #f9fafb; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;'>
+                <div style='text-align: center; max-width: 500px;'>
+                    <h1 style='color: #1f2937; font-size: 8rem; margin: 0; line-height: 1;'>$code</h1>
+                    <h2 style='color: #4b5563; margin-top: 0;'>Ops! Algo deu errado.</h2>
+                    <p style='color: #6b7280;'>Nossa equipe foi notificada e estamos trabalhando nisso. Por favor, tente novamente em alguns instantes.</p>
+                    <a href='/' style='display: inline-block; background: #2563eb; color: #fff; padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 500; margin-top: 1.5rem;'>Voltar ao Início</a>
+                </div>
+            </body>";
         }
 
         return new \Core\Http\Response($content, $code);

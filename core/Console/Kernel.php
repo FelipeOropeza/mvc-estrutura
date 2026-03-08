@@ -77,6 +77,9 @@ class Kernel
             case 'make:component':
                 $this->makeComponent($args);
                 break;
+            case 'serve':
+                $this->serveApp($args);
+                break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
                 $this->showHelp();
@@ -108,6 +111,7 @@ class Kernel
         echo "  db:seed [Nome]           Executa o seeder especificado ou a classe DatabaseSeeder\n";
         echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
         echo "  make:component <Nome>    Cria um novo Componente HTMX reativo. Ex: table_users\n";
+        echo "  serve                    Inicia o servidor de desenvolvimento local\n";
     }
 
     private function makeMigration(array $args): void
@@ -570,6 +574,17 @@ class Kernel
             echo "✅ Migration: Tabela de 'usuarios' criada.\n";
         }
 
+        // 4.9 AdminMiddleware (Permissões)
+        $middlewareDir = $this->config['paths']['middlewares'] ?? $baseDir . '/app/Middleware';
+        if (!is_dir($middlewareDir)) mkdir($middlewareDir, 0777, true);
+        
+        $adminMiddlewarePath = $middlewareDir . '/AdminMiddleware.php';
+        if (!file_exists($adminMiddlewarePath)) {
+            $code = file_get_contents("$authTemplatesDir/admin_middleware.stub");
+            file_put_contents($adminMiddlewarePath, $code);
+            echo "✅ Middleware: AdminMiddleware para permissões criado.\n";
+        }
+
         // 5. Views
         $viewDir = $this->config['paths']['views'] ?? $baseDir . '/resources/views';
         $authViewDir = $viewDir . '/auth';
@@ -883,5 +898,60 @@ class Kernel
         
         echo "✅ Componente HTMX '$fileName' criado em: app/Views/components/$fileName\n";
         echo "💡 Dica de uso na View: include('components/{$classNameRaw}') \n";
+    }
+
+    private function serveApp(array $args): void
+    {
+        // 1. Configurações
+        $port = env('APP_PORT', 8000);
+        $host = env('APP_HOST', 'localhost');
+        $defaultRoute = ltrim((string)env('APP_DEFAULT_ROUTE', ''), '/');
+
+        foreach ($args as $arg) {
+            if (strpos($arg, '--port=') === 0) $port = (int) substr($arg, 7);
+            if (strpos($arg, '--host=') === 0) $host = substr($arg, 7);
+        }
+
+        $fullUrl = "http://{$host}:{$port}/{$defaultRoute}";
+
+        // 2. UI
+        echo "\n";
+        echo "\033[1;34m=======================================================\033[0m\n";
+        echo " 🚀 \033[32mServidor de Desenvolvimento MVC Base Iniciado!\033[0m \n";
+        echo "\033[1;34m=======================================================\033[0m\n";
+        echo " 🔗 Acesse a aplicação clicando no link abaixo:\n";
+        echo " 👉 \033[1;4;32m{$fullUrl}\033[0m\n";
+        echo "-------------------------------------------------------\n";
+        echo " Pressione \033[1;31mCtrl+C\033[0m para encerrar o servidor.\n\n";
+
+        // 3. Comando (Redirecionamos stderr para stdout para ler tudo num handle só)
+        $router = realpath(__DIR__ . '/../../server.php');
+        $command = sprintf('php -S %s:%d %s 2>&1', $host, $port, escapeshellarg($router));
+
+        // 4. Execução via popen (Mais estável para leitura de fluxo contínuo no Windows)
+        $handle = popen($command, 'r');
+
+        if ($handle) {
+            while (!feof($handle)) {
+                $line = fgets($handle);
+                
+                if ($line === false) {
+                    break;
+                }
+
+                // Filtro: Se for a linha de inicialização, ignoramos
+                if (stripos($line, 'Development Server') !== false && stripos($line, 'started') !== false) {
+                    continue;
+                }
+
+                // Exibe o log (Respostas HTTP, Erros, etc)
+                echo $line;
+                
+                // Tenta forçar a saída para o terminal imediatamente
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+            }
+            pclose($handle);
+        }
     }
 }

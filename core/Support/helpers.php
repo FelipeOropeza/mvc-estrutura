@@ -238,3 +238,23 @@ if (!function_exists('csrf_field')) {
         return '<input type="hidden" name="_token" value="' . csrf_token() . '">';
     }
 }
+
+if (!function_exists('storage_url')) {
+    /**
+     * Gera a URL pública para um arquivo armazenado na pasta storage.
+     * Ex: storage_url('produtos/foto.jpg') -> '/storage/produtos/foto.jpg'
+     */
+    function storage_url(?string $path): string
+    {
+        if (!$path) {
+            return '';
+        }
+
+        // Se o path já for uma URL completa, retorna ela mesma
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
+
+        return '/storage/' . ltrim($path, '/');
+    }
+}

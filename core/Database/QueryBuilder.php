@@ -146,6 +146,27 @@ class QueryBuilder
     }
 
     /**
+     * Retorna a contagem de registros baseada nos filtros aplicados.
+     */
+    public function count(string $column = '*'): int
+    {
+        $sql = "SELECT COUNT($column) FROM {$this->table}";
+
+        if (!empty($this->joins)) {
+            $sql .= ' ' . implode(' ', $this->joins);
+        }
+
+        if (!empty($this->wheres)) {
+            $sql .= " WHERE " . implode(' AND ', $this->wheres);
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($this->params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
      * Busca o primeiro registro que bater com a query ou null.
      */
     public function first(): ?object
