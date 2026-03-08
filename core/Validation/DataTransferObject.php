@@ -52,6 +52,27 @@ abstract class DataTransferObject
         // Atribui os dados validados e confiáveis às propriedades deste DTO de forma automática
         foreach ($validatedData as $key => $value) {
             if (property_exists($this, $key)) {
+                $reflection = new \ReflectionProperty($this, $key);
+                $type = $reflection->getType();
+
+                // Se a propriedade tiver um tipo nativo (int, float, bool), tentamos o cast
+                if ($type instanceof \ReflectionNamedType && $type->isBuiltin()) {
+                    $typeName = $type->getName();
+                    if ($value !== null && $value !== '') {
+                        switch ($typeName) {
+                            case 'int':
+                                $value = (int) $value;
+                                break;
+                            case 'float':
+                                $value = (float) str_replace(',', '.', (string)$value);
+                                break;
+                            case 'bool':
+                                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                                break;
+                        }
+                    }
+                }
+
                 $this->$key = $value;
             }
         }
