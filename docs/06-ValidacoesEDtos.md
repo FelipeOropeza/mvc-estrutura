@@ -93,3 +93,23 @@ Use a Forja do Console (CLI):
 php forge make:rule DocumentoCpf
 ```
 Edite a Lógica (`app/Rules/DocumentoCpf.php`) para testar DB, Matemática, Regex. Depois, simplesmente insira o novo atributo na `class RegistroDTO`: `#[DocumentoCpf]`.
+
+---
+
+## ⚠️ Importante: Escape de HTML pertence à View, não ao Validator
+
+O Validator **não** aplica `htmlspecialchars()` nos dados. Os dados chegam ao banco e às respostas de API exatamente como foram enviados (sem modificação).
+
+O escape deve acontecer **na saída** — ou seja, nas suas Views, usando o helper `e()`:
+
+```php
+// ✅ CORRETO — escapa na View, na hora de exibir:
+<p><?= e($produto->nome) ?></p>
+<input value="<?= e(old('nome')) ?>">
+
+// ❌ ERRADO — dados sanitizados antes de salvar causam double escaping:
+// "Café & Pão" → "Caf&amp;é &amp;amp; P&amp;ão" (duplicado!)
+```
+
+Isso garante que APIs, emails e PDFs recebam os dados originais sem caracteres HTML indesejados.
+

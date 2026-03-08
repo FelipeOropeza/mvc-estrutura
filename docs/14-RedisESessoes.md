@@ -1,15 +1,115 @@
 # Cache e Sessões em Alta Velocidade (Redis)
 
-O ecossistema é otimizado para não sofrer gargalos na leitura do Disco HD em Máquinas de Produção na Nuvem e pode ser configurado para usar o cluster ultra veloz baseando-se em RAM através do **Redis**.
+O framework suporta dois drivers de sessão: **File** (padrão) e **Redis** (alta performance para produção).
 
-Acesse seu arquivo base de configuração do `.env` na raiz do projeto e altere o driver de Sessão PHP, informando também (se necessário) as portas e host do seu servidor Redis.
+---
+
+## Configuração do Driver
+
+No seu `.env`:
 
 ```env
-SESSION_DRIVER=redis
+# Padrão — sem dependência extra
+SESSION_DRIVER=file
 
+# Alta performance para produção (requer extensão Redis no PHP)
+SESSION_DRIVER=redis
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_PASSWORD=senha_se_houver
 ```
 
-O `RedisSessionHandler` já construído na nossa base se aliança imediatamente lendo suas variáveis de ambiente sem vazar dados. Além disso, o GC Probability do PHP não sofre com interrupções nem File System Locking, protegendo seu Worker Assíncrono para aguentar milhares de concorrências simultâneas de usuários sem congelar o Servidor! Se o seu servidor Redis cair, o Container também possui uma trava de segurança que imediatamente joga pro "File System Session" (temporário) para o App não despencar pra todos os usuários!
+---
+
+## Por que Redis?
+
+| | File Session | Redis Session |
+|---|---|---|
+| **Velocidade** | I/O de disco | RAM (µs) |
+| **Concorrência** | Bloqueio por arquivo | Sem bloqueio |
+| **Worker Mode** | Pode travar | Ideal |
+| **Multi-servidor** | Não compartilha | Compartilhado |
+
+O `RedisSessionHandler` desativa o GC tradicional do PHP (`session.gc_probability=0`) porque o Redis gerencia o TTL automaticamente via `SETEX`.
+
+**Fallback automático:** Se o Redis cair, o sistema cai automaticamente para FileSession, garantindo que o app continue funcionando.
+
+---
+
+## API da Sessão
+
+```php
+// Ler
+$userId = session('usuario_id');
+$userId = session()->get('usuario_id', null); // com default
+
+// Escrever
+session()->set('usuario_id', 42);
+
+// Verificar
+session()->has('usuario_id'); // bool
+
+// Remover
+session()->remove('carrinho');
+
+// Destruir tudo (logout)
+session()->destroy();
+
+// Todos os dados
+$tudo = session()->all();
+```
+
+---
+
+## Flash Messages
+
+Dados que vivem **apenas por uma requisição** (desaparecem após serem lidos):
+
+```php
+// Definir (antes de redirecionar)
+session()->flash('success', 'Produto salvo com sucesso!');
+session()->flash('error', 'Algo deu errado.');
+
+// Ler na próxima View (já vem via session())
+$msg = session('success'); // "Produto salvo com sucesso!"
+```
+
+---
+
+## CSRF Token
+
+O token é gerado automaticamente na primeira requisição e persistido na sessão:
+
+```php
+// Em formulários:
+<?= csrf_field() ?>
+// Gera: <input type="hidden" name="_token" value="abc123...">
+
+// Verificação é automática pelo middleware VerifyCsrfToken
+// Para excluir rotas da verificação, edite config/middleware.php
+```
+
+---
+
+## Segurança: Regenerar Sessão após Login
+
+Para prevenir **Session Fixation attacks**, sempre regenere a sessão após um login bem-sucedido:
+
+```php
+public function login(LoginDTO $dto): Response
+{
+    $usuario = (new Usuario())->where('email', $dto->email)->first();
+
+    if (!$usuario || !password_verify($dto->senha, $usuario->password)) {
+        fail_validation('email', 'Credenciais inválidas.');
+    }
+
+    session()->set('usuario_id', $usuario->id);
+    session()->set('cargo', $usuario->cargo);
+
+    // ✅ SEMPRE faça isso após login — gera novo session ID e novo CSRF token
+    session()->regenerate();
+
+    return redirect('/dashboard');
+}
+```
