@@ -77,6 +77,7 @@ class DatabaseDriver implements QueueInterface
                 $job, 
                 (int)$jobData['id'], 
                 (int)$jobData['attempts'] + 1, 
+                $queue,
                 $this
             );
         } catch (\Throwable $e) {
@@ -88,13 +89,13 @@ class DatabaseDriver implements QueueInterface
         }
     }
 
-    public function delete(int|string $id): void
+    public function delete(string $queue, int|string $id): void
     {
         $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id = :id");
         $stmt->execute(['id' => $id]);
     }
 
-    public function release(int|string $id, int $delay = 0): void
+    public function release(string $queue, int|string $id, int $delay = 0): void
     {
         $stmt = $this->db->prepare("UPDATE {$this->table} SET reserved_at = NULL, available_at = :available WHERE id = :id");
         $stmt->execute([

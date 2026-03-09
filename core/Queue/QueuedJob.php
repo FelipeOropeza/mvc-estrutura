@@ -13,6 +13,7 @@ class QueuedJob
         private object $job,
         private int|string $id,
         private int $attempts,
+        private string $queue,
         private QueueInterface $driver
     ) {}
 
@@ -36,17 +37,18 @@ class QueuedJob
         return $this->attempts;
     }
 
+    public function getQueue(): string
+    {
+        return $this->queue;
+    }
+
     public function delete(): void
     {
-        if (method_exists($this->driver, 'delete')) {
-            $this->driver->delete($this->id);
-        }
+        $this->driver->delete($this->queue, $this->id);
     }
 
     public function release(int $delay = 0): void
     {
-        if (method_exists($this->driver, 'release')) {
-            $this->driver->release($this->id, $delay);
-        }
+        $this->driver->release($this->queue, $this->id, $delay);
     }
 }
