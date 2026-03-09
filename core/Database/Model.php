@@ -34,7 +34,7 @@ abstract class Model
         if ($this->table === null) {
             $classPath = explode('\\', static::class);
             $className = end($classPath);
-            $this->table = strtolower($className) . 's'; // Muito básico, idealmente seria pluralizador
+            $this->table = pluralize(strtolower($className));
         }
     }
 

@@ -319,3 +319,24 @@ if (!function_exists('mailer')) {
         return \Core\Mail\MailManager::driver();
     }
 }
+if (!function_exists('pluralize')) {
+    /**
+     * Helper extremamente básico para pluralizar nomes de Models em tabelas.
+     * Ex: User -> users, Categoria -> categorias (pt-BR amigável básico)
+     */
+    function pluralize(string $singular): string
+    {
+        $lastLetter = strtolower(substr($singular, -1));
+        $lastTwo = strtolower(substr($singular, -2));
+
+        // Regras simples (Inglês + Português básico)
+        if (in_array($lastTwo, ['ch', 'sh', 'ss'])) return $singular . 'es';
+        if ($lastLetter === 'y') return substr($singular, 0, -1) . 'ies';
+        if ($lastLetter === 'a' || $lastLetter === 'e' || $lastLetter === 'i' || $lastLetter === 'o' || $lastLetter === 'u') {
+            return $singular . 's';
+        }
+        if ($lastLetter === 'r' || $lastLetter === 'z') return $singular . 'es';
+
+        return $singular . 's';
+    }
+}
