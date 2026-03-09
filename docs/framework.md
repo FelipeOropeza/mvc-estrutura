@@ -22,6 +22,10 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 14. [Cache e Sessões em Alta Velocidade (Redis)](14-RedisESessoes.md)
 15. [Tratamento de Exceções e Debug Bar](15-ExcecoesEDebug.md)
 16. [Nuvem e o Foguete FrankenPHP](16-NuvemEFrankenPHP.md)
+17. [JWT & API Stateless (Mobile/SPA)](17-JWT-E-API.md)
+18. [Sistema de E-mails (PHPMailer)](18-Emails.md)
+19. [Filas e Jobs Assíncronos](19-Filas-E-Jobs.md)
+20. [Sistema de Cache (File/Redis)](20-Cache.md)
 
 ---
 
