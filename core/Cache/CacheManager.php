@@ -14,6 +14,16 @@ class CacheManager
 
     public static function driver(): CacheInterface
     {
+        if (self::$driver !== null) {
+            // Auto-recovery: Tenta um "has" básico para ver se a conexão (Redis, etc) ainda está viva
+            // Essencial para Worker Mode (FrankenPHP)
+            try {
+                self::$driver->has('_ping');
+            } catch (\Throwable) {
+                self::$driver = null; // Caiu? Força reconexão
+            }
+        }
+
         if (self::$driver === null) {
             self::refresh();
         }

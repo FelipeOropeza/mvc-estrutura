@@ -30,6 +30,14 @@ class PhpEngine implements EngineInterface
         self::$shared[$key] = $value;
     }
 
+    /**
+     * Limpa todos os dados compartilhados (útil para resetar estado em Worker Mode)
+     */
+    public static function clearShared(): void
+    {
+        self::$shared = [];
+    }
+
     public function render(string $view, array $data = []): string
     {
         $fullPath = $this->resolvePath($view);
@@ -51,7 +59,16 @@ class PhpEngine implements EngineInterface
 
             // 1. Resolve Layouts: Se essa view solicitou um Layout ('main'), ele assume!
             // Se for uma requisição HTMX (fragmento), pulamos o layout principal para retornar apenas o pedaço atualizado
-            if ($this->layout !== null && !request()->isHtmx()) {
+            
+            // Check null-safe para o helper request() (evita quebra em CLI/Jobs)
+            $isHtmx = false;
+            try {
+                $isHtmx = request()->isHtmx();
+            } catch (\Throwable) {
+                // Sem request ativa (Background/CLI)
+            }
+
+            if ($this->layout !== null && !$isHtmx) {
                 $layoutPath = $this->resolvePath($this->layout);
                 // Permite a view filha enviar dados especificos de header/title extra para o Layout
                 $layoutMergedData = array_merge($data, $this->layoutData);
@@ -154,7 +171,7 @@ class PhpEngine implements EngineInterface
      * EXTREMAMENTE NECESSÁRIO para instâncias compartilhadas em Worker Modes (FrankenPHP)
      * onde o Container reaproveita a engine, senão sections de views antigas vazariam.
      */
-    private function resetState(): void
+    public function resetState(): void
     {
         $this->layout = null;
         $this->layoutData = [];

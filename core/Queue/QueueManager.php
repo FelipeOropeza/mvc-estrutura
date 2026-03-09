@@ -14,6 +14,15 @@ class QueueManager
 
     public static function driver(): QueueInterface
     {
+        if (self::$driver !== null && self::$driver instanceof \Core\Queue\Drivers\RedisDriver) {
+            try {
+                // Tenta uma operação leve para ver se o Redis ainda está lá
+                app(\Core\Cache\CacheInterface::class)->has('_ping'); 
+            } catch (\Throwable) {
+                self::$driver = null;
+            }
+        }
+
         if (self::$driver === null) {
             self::refresh();
         }

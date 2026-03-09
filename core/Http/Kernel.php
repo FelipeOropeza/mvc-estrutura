@@ -56,9 +56,29 @@ class Kernel
                 ->through($this->getGlobalMiddlewares($request))
                 ->then(fn($req) => $this->router->dispatch($req));
 
+            // Limpa estados residuais para a próxima requisição (FrankenPHP/Worker)
+            $this->terminate($request);
+
             return $response;
         } catch (\Throwable $e) {
             return $this->renderException($request, $e);
+        }
+    }
+
+    /**
+     * Finaliza a requisição limpando caches estáticos e estados de Singletons.
+     */
+    public function terminate(Request $request): void
+    {
+        // Reseta cache de discos do Storage
+        \Core\Storage\StorageManager::reset();
+
+        // Se houver engine de view, reseta estados de sections/layouts
+        if (\Core\Support\Container::getInstance()->has(\Core\View\EngineInterface::class)) {
+            $engine = app(\Core\View\EngineInterface::class);
+            if (method_exists($engine, 'resetState')) {
+                $engine->resetState();
+            }
         }
     }
 

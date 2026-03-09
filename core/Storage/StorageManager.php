@@ -27,4 +27,12 @@ class StorageManager
 
         throw new \Exception("Storage disk [{$name}] is not configured.");
     }
+
+    /**
+     * Reseta cache de discos (necessário para Worker Mode)
+     */
+    public static function reset(): void
+    {
+        self::$disks = [];
+    }
 }
