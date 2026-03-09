@@ -89,6 +89,9 @@ class Kernel
             case 'make:job':
                 $this->makeJob($args);
                 break;
+            case 'db:seed':
+                $this->dbSeed($args);
+                break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
                 $this->showHelp();
@@ -98,32 +101,39 @@ class Kernel
 
     private function showHelp(): void
     {
-        echo "MVC Base Console\n";
-        echo "=================\n";
+        echo "Forge CLI Engine (v4.0.0)\n";
+        echo "========================================\n";
         echo "Uso: forge [comando] ou php forge [comando]\n\n";
-        echo "Comandos disponíveis:\n";
+
+        echo "🚀 Geradores (Scaffolding):\n";
         echo "  make:controller <Nome>   Cria um novo Controller\n";
         echo "  make:model <Nome>        Cria um novo Model\n";
-        echo "  make:view <Nome>         Cria uma nova View automaticamente na extensão correta\n";
-        echo "  make:component <Nome>    Cria um novo Componente HTMX reativo. Ex: table_users\n";
-        echo "  make:service <Nome>      Cria um novo Service de regra de negócio para injetar. Ex: UserService\n";
-        echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados. Ex: CreateUsersTable\n";
-        echo "  make:middleware <Nome>   Cria um novo Middleware de validação. Ex: AuthMiddleware\n";
-        echo "  make:rule <Nome>         Cria um atributo de Validação customizado. Ex: CpfValido\n";
-        echo "  make:mutator <Nome>      Cria um atributo de Mutação customizado. Ex: LimpaCpf\n";
-        echo "  make:dto <Nome>          Cria um Data Transfer Object. Ex: Admin/LoginDTO\n";
-        echo "  make:seeder <Nome>       Cria uma nova classe de Seeder. Ex: DatabaseSeeder\n";
-        echo "  migrate                  Gera o Banco de Dados ausente (se possível) e roda as Migrations\n";
-        echo "  db:seed [Nome]           Executa o seeder especificado ou a classe DatabaseSeeder\n";
-        echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
-        echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
-        echo "  setup:auth               Instala o scaffolding completo de Autenticação (Login, Registro, DB)\n";
-        echo "  setup:api                Instala o scaffolding de API (JWT, AuthController, DTOs, Rotas)\n";
-        echo "  optimize                 Compila as rotas e dependências para máxima performance\n";
-        echo "  optimize:clear           Remove os arquivos de cache compilados\n";
+        echo "  make:view <Nome>         Cria uma nova View automaticamente\n";
+        echo "  make:component <Nome>    Cria um componente HTMX reativo\n";
+        echo "  make:service <Nome>      Cria um Service de regra de negócio\n";
+        echo "  make:migration <Nome>    Cria uma nova Migration de Banco de Dados\n";
+        echo "  make:middleware <Nome>   Cria um novo Middleware de validação\n";
+        echo "  make:rule <Nome>         Cria um atributo de Validação customizado\n";
+        echo "  make:mutator <Nome>      Cria um atributo de Mutação customizado\n";
+        echo "  make:dto <Nome>          Cria um Data Transfer Object\n";
+        echo "  make:seeder <Nome>       Cria uma nova classe de Seeder\n";
+        echo "  make:job <Nome>          Cria uma nova classe de Job para Fila\n\n";
+
+        echo "🗄️ Banco de Dados:\n";
+        echo "  migrate                  Gera o banco e executa migrations pendentes\n";
+        echo "  migrate:refresh          Reseta o banco e re-executa todas as migrations\n";
+        echo "  db:seed [Nome]           Popula o banco com seeders\n\n";
+
+        echo "🛠️ Instalação & Setup:\n";
+        echo "  setup:engine <php|twig>  Altera o motor de visualização padrão\n";
+        echo "  setup:auth               Gera sistema de Autenticação Web (Session)\n";
+        echo "  setup:api                Gera sistema de Autenticação API (JWT)\n\n";
+
+        echo "⚡ Performance & Operação:\n";
         echo "  serve                    Inicia o servidor de desenvolvimento local\n";
-        echo "  queue:work [nome]        Inicia um worker para processar a fila especificada\n";
-        echo "  make:job <Nome>          Cria uma nova classe de Job. Ex: ProcessVideo\n";
+        echo "  queue:work [fila]        Inicia o worker para processar jobs da fila\n";
+        echo "  optimize                 Gera cache de rotas e otimiza o container\n";
+        echo "  optimize:clear           Limpa todos os caches de performance\n";
     }
 
     private function makeMigration(array $args): void
