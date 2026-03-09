@@ -86,6 +86,9 @@ class Kernel
             case 'queue:work':
                 $this->queueWork($args);
                 break;
+            case 'make:job':
+                $this->makeJob($args);
+                break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
                 $this->showHelp();
@@ -120,6 +123,7 @@ class Kernel
         echo "  optimize:clear           Remove os arquivos de cache compilados\n";
         echo "  serve                    Inicia o servidor de desenvolvimento local\n";
         echo "  queue:work [nome]        Inicia um worker para processar a fila especificada\n";
+        echo "  make:job <Nome>          Cria uma nova classe de Job. Ex: ProcessVideo\n";
     }
 
     private function makeMigration(array $args): void
@@ -1076,5 +1080,30 @@ class Kernel
         }
 
         echo "\n🚀 API Scaffold completa! Não esqueça de configurar o JWT_SECRET no seu .env.\n";
+    }
+
+    private function makeJob(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome do Job. Ex: make:job EnviarRelatorio\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        $dir = realpath(__DIR__ . '/../../') . '/app/Jobs';
+        
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $path = $dir . '/' . $name . '.php';
+        
+        if (file_exists($path)) {
+            echo "Erro: O Job '$name' já existe.\n";
+            exit(1);
+        }
+
+        $content = $this->renderTemplate('job', ['{{className}}' => $name]);
+        $this->createFile($path, $content, "Job '$name'");
     }
 }

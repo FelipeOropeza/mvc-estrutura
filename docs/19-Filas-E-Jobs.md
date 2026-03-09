@@ -4,21 +4,56 @@ Filas permitem que você adie tarefas demoradas (como envio de e-mails ou proces
 
 ## 🏗️ Criando um Job
 
-Jobs são classes que estendem `Core\Queue\Job`. Elas devem implementar o método `handle()`.
+A forma mais fácil de criar um Job é usando o comando Forge:
+
+```bash
+php forge make:job ProcessarVideo
+```
+
+Isso criará uma classe em `app/Jobs/ProcessarVideo.php`. Jobs são classes que estendem `Core\Queue\Job` e implementam o método `handle()`.
+
+### Exemplos Práticos
+
+#### 📸 Exemplo 1: Redimensionamento de Imagem
+Jobs são perfeitos para processamento de mídia sem travar o usuário.
 
 ```php
 namespace App\Jobs;
 
 use Core\Queue\Job;
+use App\Services\ImageService;
 
-class EnviarEmailBoasVindas extends Job
+class RedimensionarFoto extends Job
 {
-    public function __construct(public string $email) {}
+    public function __construct(public string $path) {}
 
     public function handle(): void
     {
-        // Lógica demorada aqui
-        mail()->to($this->email)->subject('Bem-vindo')->send();
+        // Serviço que faz o trabalho pesado
+        $service = new ImageService();
+        $service->makeThumbnail($this->path, 200, 200);
+    }
+}
+```
+
+#### 📊 Exemplo 2: Exportação de Relatório CSV
+Se o relatório tem 50 mil linhas, você não quer que o usuário espere o PHP gerar tudo no request.
+
+```php
+namespace App\Jobs;
+
+use Core\Queue\Job;
+use App\Models\Venda;
+
+class ExportarVendasMensais extends Job
+{
+    public function __construct(public int $adminId, public string $mes) {}
+
+    public function handle(): void
+    {
+        $vendas = Venda::where('mes', $this->mes)->get();
+        // Gera o CSV e salva no storage...
+        // Notifica o admin ao terminar (via DB ou e-mail)
     }
 }
 ```

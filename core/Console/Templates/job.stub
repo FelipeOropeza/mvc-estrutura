@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Jobs;
+
+use Core\Queue\Job;
+
+class {{className}} extends Job
+{
+    /**
+     * Define o número de tentativas se o job falhar.
+     */
+    public int $tries = 3;
+
+    /**
+     * O tempo de espera (segundos) entre as tentativas.
+     */
+    public int $backoff = 60;
+
+    public function __construct()
+    {
+        // Receba os dados necessários para o processamento
+    }
+
+    /**
+     * Local onde a mágica acontece.
+     */
+    public function handle(): void
+    {
+        // Lógica do Job aqui
+    }
+}
