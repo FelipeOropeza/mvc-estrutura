@@ -73,11 +73,18 @@ class Kernel
         // Reseta cache de discos do Storage
         \Core\Storage\StorageManager::reset();
 
-        // Se houver engine de view, reseta estados de sections/layouts
+        // Se houver engine de view, reseta estados de sections/layouts e limpa dados compartilhados
         if (\Core\Support\Container::getInstance()->has(\Core\View\EngineInterface::class)) {
             $engine = app(\Core\View\EngineInterface::class);
+            
+            // Reseta layout e sections
             if (method_exists($engine, 'resetState')) {
                 $engine->resetState();
+            }
+
+            // Limpa dados injetados com share()
+            if ($engine instanceof \Core\View\PhpEngine) {
+                \Core\View\PhpEngine::clearShared();
             }
         }
     }

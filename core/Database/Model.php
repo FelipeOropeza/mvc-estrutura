@@ -400,14 +400,14 @@ abstract class Model
     protected function filterFillable(array $data): array
     {
         if (empty($this->fillable)) {
-            // Em modo debug, avisa o desenvolvedor que $fillable não foi definido
+            // Em modo debug, avisa o desenvolvedor que nenhuma coluna será aceita sem $fillable
             if (function_exists('env') && env('APP_DEBUG', false)) {
                 trigger_error(
-                    static::class . ': $fillable não está definido. Todos os campos estão sendo aceitos sem filtro. Defina $fillable para proteção contra Mass Assignment.',
+                    static::class . ': Tentativa de Mass Assignment sem $fillable definido. Todos os campos foram bloqueados por segurança.',
                     E_USER_NOTICE
                 );
             }
-            return $data;
+            return [];
         }
 
         return array_intersect_key($data, array_flip($this->fillable));

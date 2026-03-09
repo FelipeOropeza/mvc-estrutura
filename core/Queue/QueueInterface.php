@@ -35,4 +35,9 @@ interface QueueInterface
      * @param int $delay Segundos para esperar antes de tornar disponivel novamente
      */
     public function release(string $queue, int|string $id, int $delay = 0): void;
+
+    /**
+     * Verifica se o driver de fila ainda está conectado/operacional.
+     */
+    public function ping(): bool;
 }

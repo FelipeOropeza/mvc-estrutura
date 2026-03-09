@@ -11,12 +11,11 @@ use PDO;
 
 class DatabaseDriver implements QueueInterface
 {
-    private PDO $db;
     private string $table = 'jobs';
 
-    public function __construct()
+    private function db(): \PDO
     {
-        $this->db = Connection::getInstance();
+        return Connection::getInstance();
     }
 
     public function push(object $job, string $queue = 'default'): bool
@@ -26,7 +25,7 @@ class DatabaseDriver implements QueueInterface
         $sql = "INSERT INTO {$this->table} (queue, payload, attempts, reserved_at, available_at, created_at) 
                 VALUES (:queue, :payload, 0, NULL, :now, :now)";
         
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db()->prepare($sql);
         $stmt->bindValue(':queue', $queue);
         $stmt->bindValue(':payload', $payload);
         $now = time();
@@ -37,11 +36,11 @@ class DatabaseDriver implements QueueInterface
 
     public function pop(string $queue = 'default'): ?object
     {
-        $this->db->beginTransaction();
+        $this->db()->beginTransaction();
         
         try {
             $now = time();
-            $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $driver = $this->db()->getAttribute(PDO::ATTR_DRIVER_NAME);
             
             // SQLite não suporta FOR UPDATE, mas como ele trava o arquivo todo em transação, é seguro
             $forUpdate = ($driver === 'mysql') ? 'FOR UPDATE' : '';
@@ -52,7 +51,7 @@ class DatabaseDriver implements QueueInterface
                     AND available_at <= :now
                     ORDER BY id ASC LIMIT 1 {$forUpdate}";
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db()->prepare($sql);
             $stmt->bindValue(':queue', $queue);
             $stmt->bindValue(':now', $now);
             $stmt->bindValue(':timeout', $now - 60); // Timeout de 60 segundos
@@ -61,15 +60,15 @@ class DatabaseDriver implements QueueInterface
             $jobData = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$jobData) {
-                $this->db->rollBack();
+                $this->db()->rollBack();
                 return null;
             }
 
             // Reserva o job incrementando tentativas
-            $updateStmt = $this->db->prepare("UPDATE {$this->table} SET reserved_at = :now, attempts = attempts + 1 WHERE id = :id");
+            $updateStmt = $this->db()->prepare("UPDATE {$this->table} SET reserved_at = :now, attempts = attempts + 1 WHERE id = :id");
             $updateStmt->execute(['now' => $now, 'id' => $jobData['id']]);
 
-            $this->db->commit();
+            $this->db()->commit();
             
             $job = unserialize($jobData['payload']);
             
@@ -81,8 +80,8 @@ class DatabaseDriver implements QueueInterface
                 $this
             );
         } catch (\Throwable $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
+            if ($this->db()->inTransaction()) {
+                $this->db()->rollBack();
             }
             logger()->error("Erro ao dar pop no Database Queue: " . $e->getMessage());
             return null;
@@ -91,16 +90,26 @@ class DatabaseDriver implements QueueInterface
 
     public function delete(string $queue, int|string $id): void
     {
-        $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id = :id");
+        $stmt = $this->db()->prepare("DELETE FROM {$this->table} WHERE id = :id");
         $stmt->execute(['id' => $id]);
     }
 
     public function release(string $queue, int|string $id, int $delay = 0): void
     {
-        $stmt = $this->db->prepare("UPDATE {$this->table} SET reserved_at = NULL, available_at = :available WHERE id = :id");
+        $stmt = $this->db()->prepare("UPDATE {$this->table} SET reserved_at = NULL, available_at = :available WHERE id = :id");
         $stmt->execute([
             'available' => time() + $delay,
             'id' => $id
         ]);
+    }
+
+    public function ping(): bool
+    {
+        try {
+            $this->db()->query('SELECT 1');
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

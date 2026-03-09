@@ -56,4 +56,14 @@ class RedisDriver implements QueueInterface
         // O $delay é ignorado no Redis simples (precisaria de sub-listas de wait/delayed)
         $this->redis->rpush("queues:{$queue}", [(string)$id]);
     }
+
+    public function ping(): bool
+    {
+        try {
+            $this->redis->ping();
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
 }
