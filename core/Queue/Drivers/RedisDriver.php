@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Core\Queue\Drivers;
 
 use Core\Queue\QueueInterface;
+use Core\Queue\QueuedJob;
 use Predis\Client;
 
 class RedisDriver implements QueueInterface
@@ -37,6 +38,20 @@ class RedisDriver implements QueueInterface
             return null;
         }
 
-        return unserialize($payload);
+        $job = unserialize($payload);
+        
+        // No Redis simplificado, usamos o payload como ID para de-serializar se precisar re-inserir
+        return new QueuedJob($job, $payload, 0, $this);
+    }
+
+    public function delete(int|string $id): void
+    {
+        // No lpop o item já sai da fila, nada a fazer aqui na versão simples
+    }
+
+    public function release(int|string $id, int $delay = 0): void
+    {
+        // Re-insere no final da fila (rpush) se falhar
+        $this->redis->rpush("queues:default", [(string)$id]);
     }
 }

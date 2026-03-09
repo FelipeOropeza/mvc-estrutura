@@ -17,6 +17,7 @@ class CreateJobsTable
             $table->string('queue');
             $table->text('payload');
             $table->integer('attempts');
+            $table->integer('reserved_at')->nullable();
             $table->integer('available_at');
             $table->integer('created_at');
         });

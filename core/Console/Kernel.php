@@ -979,12 +979,26 @@ class Kernel
                 $job = \Core\Queue\QueueManager::pop($queue);
 
                 if ($job) {
-                    echo " [" . date('Y-m-d H:i:s') . "] Processando Job: " . get_class($job) . "\n";
+                    echo " [" . date('Y-m-d H:i:s') . "] Processando Job: " . get_class($job->getJob()) . "\n";
                     try {
                         $job->handle();
+                        $job->delete();
                         echo " [\033[32mOK\033[0m] Job concluído com sucesso.\n";
                     } catch (\Throwable $e) {
-                        echo " [\033[31mERRO\033[0m] Falha ao processar job: " . $e->getMessage() . "\n";
+                        $rawJob = $job->getJob();
+                        $attempts = $job->getAttempts();
+                        $maxTries = $rawJob->tries ?? 1;
+
+                        if ($attempts < $maxTries) {
+                            $backoff = $rawJob->backoff ?? 0;
+                            echo " [\033[33mRE-TENTATIVA\033[0m] Falha (#$attempts). Agendando em $backoff segundos.\n";
+                            $job->release($backoff);
+                        } else {
+                            echo " [\033[31mFALHA TOTAL\033[0m] Máximo de tentativas atingido. Removendo.\n";
+                            $job->delete();
+                        }
+                        
+                        logger()->error("Falha ao processar job " . get_class($rawJob) . ": " . $e->getMessage());
                     }
                 } else {
                     if ($once) {

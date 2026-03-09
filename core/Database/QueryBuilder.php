@@ -299,8 +299,6 @@ class QueryBuilder
     {
         $first = $models[0];
 
-        // ⚠️ Nota: eagerLoadRelations suporta apenas belongsTo e hasMany no momento.
-        // O suporte para hasOne não foi implementado e será ignorado se tentado.
         foreach ($this->with as $relationMethod) {
             if (!method_exists($first, $relationMethod)) {
                 continue;
@@ -354,6 +352,28 @@ class QueryBuilder
                 foreach ($models as $m) {
                     $val = $m->{$def->localKey};
                     $m->setRelation($relationMethod, $dictionary[$val] ?? []);
+                }
+            } elseif ($def->type === 'hasOne') {
+                $ids = [];
+                foreach ($models as $m) {
+                    $val = $m->{$def->localKey};
+                    if ($val !== null && !in_array($val, $ids)) {
+                        $ids[] = $val;
+                    }
+                }
+
+                if (empty($ids)) continue;
+
+                $relatedModels = (new $def->relatedClass())->whereIn($def->foreignKey, $ids)->get();
+
+                $dictionary = [];
+                foreach ($relatedModels as $r) {
+                    $dictionary[$r->{$def->foreignKey}] = $r;
+                }
+
+                foreach ($models as $m) {
+                    $val = $m->{$def->localKey};
+                    $m->setRelation($relationMethod, $dictionary[$val] ?? null);
                 }
             }
         }

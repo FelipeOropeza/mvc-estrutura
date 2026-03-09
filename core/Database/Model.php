@@ -376,6 +376,25 @@ abstract class Model
     }
 
     /**
+     * Relacionamento 1:1 - Esta Model "Tem Um" Outro.
+     * Ex: $usuario->endereco() >> hasOne(Endereco::class, 'usuario_id')
+     */
+    protected function hasOne(string $relatedClass, string $foreignKey, string $localKey = 'id'): mixed
+    {
+        if ($this->relationDefinitionMode) {
+            return new RelationDefinition('hasOne', $relatedClass, $foreignKey, $localKey);
+        }
+
+        $related = new $relatedClass();
+
+        if ($this->$localKey === null) {
+            return null;
+        }
+
+        return $related->where($foreignKey, '=', $this->$localKey)->first();
+    }
+
+    /**
      * Filtra os dados de entrada usando o Mass Assignment (lista $fillable).
      */
     protected function filterFillable(array $data): array

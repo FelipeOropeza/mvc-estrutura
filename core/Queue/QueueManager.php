@@ -15,16 +15,21 @@ class QueueManager
     public static function driver(): QueueInterface
     {
         if (self::$driver === null) {
-            $config = env('QUEUE_DRIVER', 'database');
-
-            self::$driver = match ($config) {
-                'redis'    => new RedisDriver(),
-                'database' => new DatabaseDriver(),
-                default    => throw new Exception("Driver de fila [{$config}] não suportado.")
-            };
+            self::refresh();
         }
 
         return self::$driver;
+    }
+
+    public static function refresh(): void
+    {
+        $config = env('QUEUE_DRIVER', 'database');
+
+        self::$driver = match ($config) {
+            'redis'    => new RedisDriver(),
+            'database' => new DatabaseDriver(),
+            default    => throw new Exception("Driver de fila [{$config}] não suportado.")
+        };
     }
 
     /**

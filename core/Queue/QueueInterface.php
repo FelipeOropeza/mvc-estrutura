@@ -18,7 +18,20 @@ interface QueueInterface
      * Retira e retorna o próximo Job da fila.
      * 
      * @param string $queue Nome da fila
-     * @return object|null O Job ou null se vazio
+     * @return object|null O Job (ou QueuedJob wrapper) ou null se vazio
      */
     public function pop(string $queue = 'default'): ?object;
+
+    /**
+     * Remove um job da fila definitivamente.
+     */
+    public function delete(int|string $id): void;
+
+    /**
+     * Devolve um job para a fila para ser re-tentado.
+     * 
+     * @param int|string $id ID do Job
+     * @param int $delay Segundos para esperar antes de tornar disponivel novamente
+     */
+    public function release(int|string $id, int $delay = 0): void;
 }

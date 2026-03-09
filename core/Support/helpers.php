@@ -309,12 +309,12 @@ if (!function_exists('redirect')) {
     }
 }
 
-if (!function_exists('mail')) {
+if (!function_exists('mailer')) {
     /**
      * Facilita o envio de e-mails.
-     * Uso: mail()->to('user@test.com')->subject('Oi')->body('Conteúdo')->send();
+     * Uso: mailer()->to('user@test.com')->subject('Oi')->body('Conteúdo')->send();
      */
-    function mail(): \Core\Mail\MailerInterface
+    function mailer(): \Core\Mail\MailerInterface
     {
         return \Core\Mail\MailManager::driver();
     }

@@ -15,16 +15,21 @@ class CacheManager
     public static function driver(): CacheInterface
     {
         if (self::$driver === null) {
-            $config = env('CACHE_DRIVER', 'file');
-
-            self::$driver = match ($config) {
-                'redis' => new RedisDriver(),
-                'file'  => new FileDriver(),
-                default => throw new Exception("Driver de cache [{$config}] não suportado.")
-            };
+            self::refresh();
         }
 
         return self::$driver;
+    }
+
+    public static function refresh(): void
+    {
+        $config = env('CACHE_DRIVER', 'file');
+
+        self::$driver = match ($config) {
+            'redis' => new RedisDriver(),
+            'file'  => new FileDriver(),
+            default => throw new Exception("Driver de cache [{$config}] não suportado.")
+        };
     }
 
     public static function get(string $key, mixed $default = null): mixed

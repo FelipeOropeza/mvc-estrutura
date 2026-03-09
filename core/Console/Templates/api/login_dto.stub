@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTOs\Api;
 
-use Core\Validation\Rule\Required;
-use Core\Validation\Rule\Email;
+use Core\Attributes\Required;
+use Core\Attributes\Email;
 
 class LoginDTO
 {

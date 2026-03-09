@@ -174,13 +174,22 @@ class Categoria extends Model {
 }
 ```
 
+**Model Usuario (hasOne — Tem Um Endereço):**
+```php
+class Usuario extends Model {
+    public function endereco(): ?Endereco {
+        return $this->hasOne(Endereco::class, 'usuario_id');
+    }
+}
+```
+
 **Uso com Eager Loading (evita N+1):**
 ```php
-// Carrega produto + categoria numa única query
-$produtos = (new Produto())->newQuery()->with('categoria')->get();
+// Carrega usuario + endereco numa única query
+$usuarios = (new Usuario())->newQuery()->with('endereco')->get();
 
-foreach ($produtos as $produto) {
-    echo $produto->categoria->titulo; // Sem query extra!
+foreach ($usuarios as $usuario) {
+    echo $usuario->endereco->rua; // Sem query extra!
 }
 ```
 

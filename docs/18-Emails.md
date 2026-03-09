@@ -19,10 +19,10 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 ## ✉️ Enviando E-mails
 
-Você pode usar o helper global `mail()` para disparar e-mails de qualquer lugar da aplicação:
+Você pode usar o helper global `mailer()` para disparar e-mails de qualquer lugar da aplicação:
 
 ```php
-mail()
+mailer()
     ->to('cliente@destino.com', 'Nome do Cliente')
     ->subject('Assunto do E-mail')
     ->body('<h1>Olá!</h1><p>Este é um e-mail de teste.</p>')
@@ -43,7 +43,7 @@ Você pode combinar o envio de e-mail com o motor de templates (Twig ou PHP) par
 ```php
 $html = view('emails.boas_vindas', ['user' => $user])->getContent();
 
-mail()
+mailer()
     ->to($user->email)
     ->subject('Bem-vindo!')
     ->body($html)
