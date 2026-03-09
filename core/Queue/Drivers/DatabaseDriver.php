@@ -62,7 +62,7 @@ class DatabaseDriver implements QueueInterface
             $this->db->commit();
             
             return unserialize($jobData['payload']);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }

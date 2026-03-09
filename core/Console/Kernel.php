@@ -969,23 +969,39 @@ class Kernel
     private function queueWork(array $args): void
     {
         $queue = $args[1] ?? 'default';
-        echo "Worker iniciado para a fila: [{$queue}]\n";
+        $once = in_array('--once', $args);
+
+        echo "Worker iniciado para a fila: [{$queue}]" . ($once ? " (Modo único)" : "") . "\n";
         echo "Pressione Ctrl+C para parar.\n";
 
         while (true) {
-            $job = \Core\Queue\QueueManager::pop($queue);
+            try {
+                $job = \Core\Queue\QueueManager::pop($queue);
 
-            if ($job) {
-                echo " [" . date('Y-m-d H:i:s') . "] Processando Job: " . get_class($job) . "\n";
-                try {
-                    $job->handle();
-                    echo " [\033[32mOK\033[0m] Job concluído com sucesso.\n";
-                } catch (\Exception $e) {
-                    echo " [\033[31mERRO\033[0m] Falha ao processar job: " . $e->getMessage() . "\n";
+                if ($job) {
+                    echo " [" . date('Y-m-d H:i:s') . "] Processando Job: " . get_class($job) . "\n";
+                    try {
+                        $job->handle();
+                        echo " [\033[32mOK\033[0m] Job concluído com sucesso.\n";
+                    } catch (\Throwable $e) {
+                        echo " [\033[31mERRO\033[0m] Falha ao processar job: " . $e->getMessage() . "\n";
+                    }
+                } else {
+                    if ($once) {
+                        echo " [INFO] Nenhum job pendente. Encerrando worker (--once).\n";
+                        break;
+                    }
+                    // Dorme um pouco se não houver jobs para não estressar a CPU/Banco
+                    sleep(3);
                 }
-            } else {
-                // Dorme um pouco se não houver jobs para não estressar a CPU/Banco
+            } catch (\Throwable $e) {
+                echo " [\033[31mCRÍTICO\033[0m] Erro no worker: " . $e->getMessage() . "\n";
+                if ($once) break;
                 sleep(3);
+            }
+
+            if ($once && ($job ?? null)) {
+                break;
             }
         }
     }
