@@ -327,16 +327,26 @@ if (!function_exists('pluralize')) {
     function pluralize(string $singular): string
     {
         $lastLetter = strtolower(substr($singular, -1));
-        $lastTwo = strtolower(substr($singular, -2));
+        $lastTwo    = strtolower(substr($singular, -2));
 
-        // Regras simples (Inglês + Português básico)
+        // ch, sh, ss → es (ex: Church → Churches, Address → Addresses)
         if (in_array($lastTwo, ['ch', 'sh', 'ss'])) return $singular . 'es';
-        if ($lastLetter === 'y') return substr($singular, 0, -1) . 'ies';
-        if ($lastLetter === 'a' || $lastLetter === 'e' || $lastLetter === 'i' || $lastLetter === 'o' || $lastLetter === 'u') {
-            return $singular . 's';
-        }
-        if ($lastLetter === 'r' || $lastLetter === 'z') return $singular . 'es';
 
+        // y → verifica letra anterior: consoante = ies, vogal = ys (ex: Category → Categories, Boy → Boys)
+        if ($lastLetter === 'y') {
+            $beforeY = strtolower(substr($singular, -2, 1));
+            return in_array($beforeY, ['a', 'e', 'i', 'o', 'u'])
+                ? $singular . 's'
+                : substr($singular, 0, -1) . 'ies';
+        }
+
+        // vogais → s (ex: Categoria → Categorias, Produto → Produtos)
+        if (in_array($lastLetter, ['a', 'e', 'i', 'o', 'u'])) return $singular . 's';
+
+        // x, r, z → es (ex: Flux → Fluxes, Fornecedor → Fornecedores, Capaz → Capazes)
+        if (in_array($lastLetter, ['x', 'r', 'z'])) return $singular . 'es';
+
+        // padrão → s (ex: User → Users, Animal → Animals)
         return $singular . 's';
     }
 }
