@@ -9,7 +9,8 @@ use App\Controllers\Api\AuthController;
  * --------------------------------------------------------------------------
  */
 
-// Endpoints Públicos (Login)
+// Endpoints Públicos (Login e Registro)
+Route::post('/api/register', [AuthController::class, 'register']);
 Route::post('/api/login', [AuthController::class, 'login']);
 
 // Endpoints Protegidos por JWT

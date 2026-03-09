@@ -25,9 +25,7 @@ php forge optimize                 # Compila Rotas e Arquivos no Cache acelerand
 php forge optimize:clear           # Limpa a compilação do Cache e do Optimize 
 
 # Ambiente de Desenvolvimento:
-php forge serve                    # Inicia o servidor local inteligente com logs limpos
-php forge serve --port=9000        # Inicia em uma porta específica
-php forge serve --debug           # Inicia exibindo os logs detalhados do PHP
+composer start                    # Inicia o servidor local via script do Composer
 ```
 
 ## Migrations e Schema Builder

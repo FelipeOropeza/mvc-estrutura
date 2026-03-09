@@ -92,7 +92,11 @@ class Request
     public function path(): string
     {
         $uri = parse_url($this->server['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-        $scriptName = dirname($this->server['SCRIPT_NAME'] ?? '');
+        $scriptName = str_replace('\\', '/', dirname($this->server['SCRIPT_NAME'] ?? ''));
+        if ($scriptName === '\\' || $scriptName === '.') {
+            $scriptName = '/';
+        }
+
         if ($scriptName !== '/' && strpos((string) $uri, (string) $scriptName) === 0) {
             $uri = substr((string) $uri, strlen((string) $scriptName));
         }
@@ -152,11 +156,29 @@ class Request
     }
 
     /**
-     * Retorna o valor de um cabeçalho da requisição
+     * Retorna o valor de um cabeçalho da requisição.
+     * Verifica $_SERVER primeiro, depois getallheaders() como fallback.
+     * Necessário pois o servidor embutido do PHP não repassa HTTP_AUTHORIZATION via $_SERVER.
      */
     public function header(string $key, mixed $default = null): mixed
     {
-        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
-        return $this->server[$key] ?? $default;
+        $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
+
+        if (isset($this->server[$serverKey])) {
+            return $this->server[$serverKey];
+        }
+
+        // Fallback: lê os headers reais via getallheaders() (funciona no CLI e Apache)
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            // Busca case-insensitive
+            foreach ($headers as $name => $value) {
+                if (strcasecmp($name, $key) === 0) {
+                    return $value;
+                }
+            }
+        }
+
+        return $default;
     }
 }

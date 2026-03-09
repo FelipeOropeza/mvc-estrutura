@@ -21,4 +21,19 @@ class AuthService
 
         return $user->createToken();
     }
+
+    /**
+     * Cria um novo usuário com senha criptografada.
+     */
+    public function register(array $data): User
+    {
+        $userModel = new User();
+        $id = $userModel->insert([
+            'nome'  => $data['nome'],
+            'email' => $data['email'],
+            'senha' => password_hash($data['senha'], PASSWORD_BCRYPT),
+        ]);
+        
+        return $userModel->find($id);
+    }
 }

@@ -13,3 +13,7 @@ use Core\Routing\Route;
 
 // Route::get('/', [HomeController::class, 'index']);
 
+
+
+// Inclui Rotas de API
+require_once __DIR__ . '/api.php';

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Api;
 
 use App\DTOs\Api\LoginDTO;
+use App\DTOs\Api\RegisterDTO;
 use App\Services\Api\AuthService;
 use App\Models\User;
 use Core\Http\Response;
@@ -16,6 +17,26 @@ class AuthController
     public function __construct(AuthService $authService)
     {
         $this->authService = $authService;
+    }
+
+    /**
+     * Registra um novo usuário.
+     */
+    public function register(): Response
+    {
+        $dto = new RegisterDTO();
+        $data = validate($dto);
+
+        $user = $this->authService->register($data);
+
+        return response()->json([
+            'message' => 'Usuário registrado com sucesso',
+            'user' => [
+                'id' => $user->id,
+                'nome' => $user->nome,
+                'email' => $user->email
+            ]
+        ], 201);
     }
 
     /**

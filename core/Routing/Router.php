@@ -212,7 +212,10 @@ class Router
         $method = $request->server['REQUEST_METHOD'] ?? 'GET';
 
         // Tenta detectar se estamos rodando em um subdiretório
-        $scriptName = dirname($request->server['SCRIPT_NAME'] ?? '');
+        $scriptName = str_replace('\\', '/', dirname($request->server['SCRIPT_NAME'] ?? ''));
+        if ($scriptName === '\\' || $scriptName === '.') {
+            $scriptName = '/';
+        }
 
         // Se o scriptName não for apenas '/' (root), removemos ele da URI
         if ($scriptName !== '/' && strpos((string) $uri, (string) $scriptName) === 0) {

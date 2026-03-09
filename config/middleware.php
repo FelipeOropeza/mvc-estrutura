@@ -11,8 +11,8 @@ return [
      |
      */
     'global' => [
+        \Core\Http\Middleware\HandleCors::class,
         \Core\Http\Middleware\StartSession::class,
-        // \App\Middleware\HandleCors::class,
     ],
 
     /*

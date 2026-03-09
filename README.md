@@ -64,7 +64,7 @@ Se não for usar o Docker, uma vez que o projeto esteja instanciado, inicie o se
 ```bash
 composer start
 ```
-*(O script `start` apontará para `server.php` garantindo que testes locais reproduzem o travamento de segurança da pasta `/public` com eficiência absoluta).*
+*(O script `start` inicia o servidor embutido do PHP apontando para a pasta `/public`, garantindo a segurança dos arquivos internos).*
 
 Acesse `http://localhost:8000` no seu navegador.
 

@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\DTOs\Api;
+
+use Core\Attributes\Required;
+use Core\Attributes\Email;
+
+class RegisterDTO
+{
+    #[Required("o nome é obrigatório.")]
+    public string $nome;
+
+    #[Required("O e-mail é obrigatório.")]
+    #[Email("Digite um e-mail válido.")]
+    public string $email;
+
+    #[Required("A senha é obrigatória.")]
+    public string $senha;
+}
