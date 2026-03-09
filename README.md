@@ -14,7 +14,12 @@ Um esqueleto PHP puro, ultra-leve e focado em performance (Stateless). Construí
 * **Upload Seguro e Storage**: Abstração Orientada a Objetos robusta para manipulação e validação de `UploadedFile`.
 * **Segurança e Log de Falhas**: Exceções são silenciadas no arquivo `storage/logs/app.log` se o modo de debug estiver inativo (`APP_DEBUG=false`), blindando a visão do usuário final num Deploy de Produção.
 * **Suporte Nativo ao HTMX**: Métodos utilitários nativos de Request e Response (`isHtmx()`, `hxTrigger()`), além de motor PHP capaz de isolar renderização de componentes parciais (pular Layout Mestre).
-* **CLI (Forge)**: Uma ferramenta de console robusta e extensível para criar código pré-fabricado, regras customizadas e rodar migrações.
+* **API & JWT Suporte Nativa**: Ferramentas para construir APIs Stateless protegidas por **JSON Web Tokens**. Comando `setup:api` para scaffold rápido.
+* **Sistema de E-mails Robusto**: Abstração de e-mails via PHPMailer com suporte a SMTP e drivers configuráveis.
+* **Filas e Processamento Assíncrono (Queues)**: Adie tarefas pesadas para background com drivers de **Banco de Dados** ou **Redis**.
+* **Cache Inteligente**: Drivers de **Arquivo** e **Redis** para armazenamento temporário e alta performance.
+* **Início Rápido com Docker**: Ambiente com **Redis** e MariaDB pré-configurados no `docker-compose.yml`.
+* **CLI (Forge)**: Uma ferramenta de console robusta para criar código, rodar migrações e processar filas.
 
 ## Documentação
 
@@ -78,6 +83,8 @@ php forge make:mutator LimpaCpf
 php forge migrate
 php forge setup:engine twig
 php forge setup:auth
+php forge setup:api
+php forge queue:work
 ```
 
 ## Licença

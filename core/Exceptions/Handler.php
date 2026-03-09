@@ -57,9 +57,10 @@ class Handler
      * Usado fortemente pelo Kernel HTTP para previnir crashes fatais em servidores assíncronos.
      * 
      * @param Throwable $exception
+     * @param \Core\Http\Request|null $request
      * @return \Core\Http\Response
      */
-    public function renderException(Throwable $exception): \Core\Http\Response
+    public function renderException(Throwable $exception, ?\Core\Http\Request $request = null): \Core\Http\Response
     {
         // 1. Limpa qualquer buffer de saída que possa estar aberto (evita erro "sujo" dentro de layouts/views)
         while (ob_get_level() > 0) {
@@ -73,8 +74,10 @@ class Handler
         }
 
         // Verifica se quer retornar JSON (para API) ou HTML
-        $isApi = (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
-            (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') === 0);
+        $isApi = $request ? $request->isApi() : (
+            (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+            (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') === 0)
+        );
 
         // Se for um Erro de Validação Limpo, Redirecionamos ou Formatamos o DTO sem Logar como Alerta
         if ($exception instanceof \Core\Exceptions\ValidationException) {

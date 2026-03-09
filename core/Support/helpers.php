@@ -308,3 +308,14 @@ if (!function_exists('redirect')) {
         return Response::makeRedirect($url, $status);
     }
 }
+
+if (!function_exists('mail')) {
+    /**
+     * Facilita o envio de e-mails.
+     * Uso: mail()->to('user@test.com')->subject('Oi')->body('Conteúdo')->send();
+     */
+    function mail(): \Core\Mail\MailerInterface
+    {
+        return \Core\Mail\MailManager::driver();
+    }
+}

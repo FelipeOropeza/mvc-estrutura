@@ -1,0 +1,20 @@
+<?php
+
+use Core\Routing\Route;
+use App\Controllers\Api\AuthController;
+
+/**
+ * --------------------------------------------------------------------------
+ * Rotas de API (JWT Authentication)
+ * --------------------------------------------------------------------------
+ */
+
+// Endpoints Públicos (Login)
+Route::post('/api/login', [AuthController::class, 'login']);
+
+// Endpoints Protegidos por JWT
+Route::group(['middleware' => 'auth.api'], function() {
+    
+    Route::get('/api/me', [AuthController::class, 'me']);
+    
+});

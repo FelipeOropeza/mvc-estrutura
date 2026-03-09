@@ -1,0 +1,18 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\DTOs\Api;
+
+use Core\Validation\Rule\Required;
+use Core\Validation\Rule\Email;
+
+class LoginDTO
+{
+    #[Required("O e-mail é obrigatório.")]
+    #[Email("Digite um e-mail válido.")]
+    public string $email;
+
+    #[Required("A senha é obrigatória.")]
+    public string $senha;
+}

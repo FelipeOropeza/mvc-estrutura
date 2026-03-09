@@ -14,8 +14,15 @@ services:
       # Se você criar um arquivo .env depois, o Docker pode puxá-lo aqui também
       - APP_ENV=local
     volumes:
-      # IMPORTANTE: Esse volume (-) mapeia a pasta atual (onde está o docker-compose)
-      # para a pasta /app do Container. Isso significa que qualquer código que você
-      # edite agora no VS Code do Windows, será atualizado "magicamente" lá dentro!
       - .:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Banco de Dados Redis para Cache e Filas
+  redis:
+    image: redis:alpine
+    container_name: mvc_redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped

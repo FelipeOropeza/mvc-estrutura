@@ -110,6 +110,14 @@ class Request
     }
 
     /**
+     * Verifica se a requisição é direcionada para a API baseada no path ou headers.
+     */
+    public function isApi(): bool
+    {
+        return str_starts_with($this->path(), '/api') || $this->wantsJson();
+    }
+
+    /**
      * Retorna a URL da página anterior.
      */
     public function referer(): string

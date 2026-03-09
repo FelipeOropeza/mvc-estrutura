@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Api;
+
+use App\Models\User;
+
+class AuthService
+{
+    /**
+     * Tenta autenticar e gera um token JWT.
+     */
+    public function attempt(string $email, string $password): ?string
+    {
+        $user = (new User())->where('email', '=', $email)->first();
+
+        if (!$user || !password_verify($password, $user->senha)) {
+            return null;
+        }
+
+        return $user->createToken();
+    }
+}

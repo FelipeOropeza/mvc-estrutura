@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Core\Database\Model;
+use Core\Auth\TokenManager;
+
+class User extends Model
+{
+    protected ?string $table = 'users';
+
+    protected array $fillable = [
+        'nome',
+        'email',
+        'senha',
+    ];
+
+    /**
+     * Gera um JWT para este usuário.
+     */
+    public function createToken(): string
+    {
+        return (new TokenManager())->generateToken($this->id);
+    }
+}

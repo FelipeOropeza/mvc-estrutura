@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Middleware;
+
+use Core\Http\Request;
+use Core\Http\Response;
+use Core\Auth\TokenManager;
+use Closure;
+
+class AuthApiMiddleware
+{
+    /**
+     * Valida o token JWT para requisições de API.
+     */
+    public function handle(Request $request, Closure $next)
+    {
+        $header = $request->header('Authorization');
+
+        if (!$header || !str_starts_with($header, 'Bearer ')) {
+            return response()->json([
+                'error' => 'Token não fornecido ou formato inválido.'
+            ], 401);
+        }
+
+        $token = substr($header, 7);
+        $tokenManager = new TokenManager();
+        $payload = $tokenManager->validateToken($token);
+
+        if (!$payload) {
+            return response()->json([
+                'error' => 'Token inválido ou expirado.'
+            ], 401);
+        }
+
+        // Injeta o ID do usuário no request para uso posterior nos Controllers
+        $request->attributes['auth_user_id'] = $payload->sub;
+
+        return $next($request);
+    }
+}

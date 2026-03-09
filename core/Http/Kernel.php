@@ -18,20 +18,23 @@ class Kernel
     /**
      * Retorna os Middlewares globais lendo das configurações.
      */
-    protected function getGlobalMiddlewares(): array
+    protected function getGlobalMiddlewares(Request $request): array
     {
         $container = \Core\Support\Container::getInstance();
         $config = $container->has('config') ? $container->get('config') : [];
 
-        // Puxa do arquivo config/middleware.php se existir, senão usa o padrão
-        if (isset($config['middleware']['global'])) {
-            return $config['middleware']['global'];
-        }
-
-        // Fallback padrão se não tiver config
-        return [
+        $middlewares = $config['middleware']['global'] ?? [
             \Core\Http\Middleware\StartSession::class,
         ];
+
+        // Se for API, removemos middlewares de estado (como Sessão) para garantir Stateless
+        if ($request->isApi()) {
+            $middlewares = array_filter($middlewares, function ($middleware) {
+                return !str_contains((string)$middleware, 'StartSession');
+            });
+        }
+
+        return array_values($middlewares);
     }
 
     /**
@@ -50,7 +53,7 @@ class Kernel
             $pipeline = new Pipeline();
             $response = $pipeline
                 ->send($request)
-                ->through($this->getGlobalMiddlewares())
+                ->through($this->getGlobalMiddlewares($request))
                 ->then(fn($req) => $this->router->dispatch($req));
 
             return $response;
@@ -68,6 +71,6 @@ class Kernel
         // Aqui conectamos ao global Handler para extrair um Objeto Response pronto
         $handler = new \Core\Exceptions\Handler();
 
-        return $handler->renderException($e);
+        return $handler->renderException($e, $request);
     }
 }

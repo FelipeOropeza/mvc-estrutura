@@ -59,6 +59,9 @@ class Kernel
             case 'setup:auth':
                 $this->setupAuth($args);
                 break;
+            case 'setup:api':
+                $this->setupApi($args);
+                break;
             case 'optimize':
                 $this->optimizeApp($args);
                 break;
@@ -79,6 +82,9 @@ class Kernel
                 break;
             case 'serve':
                 $this->serveApp($args);
+                break;
+            case 'queue:work':
+                $this->queueWork($args);
                 break;
             default:
                 echo "Erro: Comando não reconhecido: '$command'\n";
@@ -109,9 +115,11 @@ class Kernel
         echo "  migrate:refresh          Desfaz todas as migrations e re-executa do zero\n";
         echo "  setup:engine <php|twig>  Muda o motor padrão do projeto e limpa views não utilizadas\n";
         echo "  setup:auth               Instala o scaffolding completo de Autenticação (Login, Registro, DB)\n";
+        echo "  setup:api                Instala o scaffolding de API (JWT, AuthController, DTOs, Rotas)\n";
         echo "  optimize                 Compila as rotas e dependências para máxima performance\n";
         echo "  optimize:clear           Remove os arquivos de cache compilados\n";
         echo "  serve                    Inicia o servidor de desenvolvimento local\n";
+        echo "  queue:work [nome]        Inicia um worker para processar a fila especificada\n";
     }
 
     private function makeMigration(array $args): void
@@ -952,5 +960,121 @@ class Kernel
             }
             pclose($handle);
         }
+    }
+
+    private function queueWork(array $args): void
+    {
+        $queue = $args[1] ?? 'default';
+        echo "Worker iniciado para a fila: [{$queue}]\n";
+        echo "Pressione Ctrl+C para parar.\n";
+
+        while (true) {
+            $job = \Core\Queue\QueueManager::pop($queue);
+
+            if ($job) {
+                echo " [" . date('Y-m-d H:i:s') . "] Processando Job: " . get_class($job) . "\n";
+                try {
+                    $job->handle();
+                    echo " [\033[32mOK\033[0m] Job concluído com sucesso.\n";
+                } catch (\Exception $e) {
+                    echo " [\033[31mERRO\033[0m] Falha ao processar job: " . $e->getMessage() . "\n";
+                }
+            } else {
+                // Dorme um pouco se não houver jobs para não estressar a CPU/Banco
+                sleep(3);
+            }
+        }
+    }
+
+    private function setupApi(array $args): void
+    {
+        echo "Iniciando o Scaffold de API JWT...\n========================================\n";
+
+        $baseDir = realpath(__DIR__ . '/../../');
+        $apiTemplatesDir = __DIR__ . '/Templates/api';
+
+        // 1. Controller
+        $apiControllerDir = $baseDir . '/app/Controllers/Api';
+        if (!is_dir($apiControllerDir)) mkdir($apiControllerDir, 0777, true);
+
+        $controllerPath = $apiControllerDir . '/AuthController.php';
+        if (!file_exists($controllerPath)) {
+            $code = file_get_contents("$apiTemplatesDir/controller.stub");
+            file_put_contents($controllerPath, $code);
+            echo "✅ Controller: Api/AuthController criado.\n";
+        }
+
+        // 2. DTOs
+        $dtoDir = $baseDir . '/app/DTOs/Api';
+        if (!is_dir($dtoDir)) mkdir($dtoDir, 0777, true);
+
+        $loginDtoPath = $dtoDir . '/LoginDTO.php';
+        if (!file_exists($loginDtoPath)) {
+            $code = file_get_contents("$apiTemplatesDir/login_dto.stub");
+            file_put_contents($loginDtoPath, $code);
+            echo "✅ DTO: LoginDTO criado em Api/.\n";
+        }
+
+        // 3. Service
+        $serviceDir = $baseDir . '/app/Services/Api';
+        if (!is_dir($serviceDir)) mkdir($serviceDir, 0777, true);
+
+        $authServicePath = $serviceDir . '/AuthService.php';
+        if (!file_exists($authServicePath)) {
+            $code = file_get_contents("$apiTemplatesDir/auth_service.stub");
+            file_put_contents($authServicePath, $code);
+            echo "✅ Service: Api/AuthService criado.\n";
+        }
+
+        // 4. Model (Specialized User)
+        $modelDir = $baseDir . '/app/Models';
+        $modelPath = $modelDir . '/User.php';
+        if (!file_exists($modelPath)) {
+            $code = file_get_contents("$apiTemplatesDir/user_model.stub");
+            file_put_contents($modelPath, $code);
+            echo "✅ Model: User criado com suporte a JWT.\n";
+        }
+
+        // 5. Migration
+        $migrationDir = $baseDir . '/database/migrations';
+        $existing = glob($migrationDir . '/*_CreateUsersTable.php');
+        if (empty($existing)) {
+            $fileName = date('Y_m_d_His') . '_CreateUsersTable.php';
+            $migrationPath = $migrationDir . '/' . $fileName;
+            $code = file_get_contents("$apiTemplatesDir/migration.stub");
+            file_put_contents($migrationPath, $code);
+            echo "✅ Migration: Tabela de 'users' criada.\n";
+        }
+
+        // 6. Middleware
+        $middlewareDir = $baseDir . '/app/Middleware';
+        if (!is_dir($middlewareDir)) mkdir($middlewareDir, 0777, true);
+        $middlewarePath = $middlewareDir . '/AuthApiMiddleware.php';
+        if (!file_exists($middlewarePath)) {
+            $code = file_get_contents("$apiTemplatesDir/middleware.stub");
+            file_put_contents($middlewarePath, $code);
+            echo "✅ Middleware: AuthApiMiddleware de JWT criado.\n";
+        }
+
+        // 7. Routes (api.php)
+        $apiRoutesPath = $baseDir . '/routes/api.php';
+        if (!file_exists($apiRoutesPath)) {
+            $code = file_get_contents("$apiTemplatesDir/routes.stub");
+            file_put_contents($apiRoutesPath, $code);
+            echo "✅ Rotas: routes/api.php criado.\n";
+
+            // Incluir no web.php
+            $webRoutesPath = $baseDir . '/routes/web.php';
+            if (file_exists($webRoutesPath)) {
+                $webContent = file_get_contents($webRoutesPath);
+                if (strpos($webContent, "'api.php'") === false && strpos($webContent, '"api.php"') === false) {
+                    $snippet = "\n\n// Inclui Rotas de API\nrequire_once __DIR__ . '/api.php';\n";
+                    file_put_contents($webRoutesPath, $webContent . $snippet);
+                    echo "✅ Rotas: routes/api.php incluído no routes/web.php.\n";
+                }
+            }
+        }
+
+        echo "\n🚀 API Scaffold completa! Não esqueça de configurar o JWT_SECRET no seu .env.\n";
     }
 }

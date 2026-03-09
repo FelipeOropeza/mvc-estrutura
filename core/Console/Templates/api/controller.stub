@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers\Api;
+
+use App\DTOs\Api\LoginDTO;
+use App\Services\Api\AuthService;
+use App\Models\User;
+use Core\Http\Response;
+
+class AuthController
+{
+    private AuthService $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
+    /**
+     * Tenta autenticar um usuário e retorna o Token JWT.
+     */
+    public function login(): Response
+    {
+        $dto = new LoginDTO();
+        $data = validate($dto);
+
+        $token = $this->authService->attempt($data['email'], $data['senha']);
+
+        if (!$token) {
+            return response()->json(['error' => 'Credenciais inválidas'], 401);
+        }
+
+        return response()->json([
+            'token' => $token,
+            'type' => 'Bearer'
+        ]);
+    }
+
+    /**
+     * Retorna os dados do usuário autenticado via Token.
+     */
+    public function me(): Response
+    {
+        $userId = request()->attributes['auth_user_id'] ?? null;
+        
+        if (!$userId) {
+            return response()->json(['error' => 'Não autorizado'], 401);
+        }
+
+        $user = (new User())->find($userId);
+
+        return response()->json([
+            'id' => $user->id,
+            'nome' => $user->nome,
+            'email' => $user->email
+        ]);
+    }
+}
