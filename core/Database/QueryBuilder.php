@@ -286,6 +286,19 @@ class QueryBuilder
     }
 
     /**
+     * Executa um DELETE condicional baseado nos filtros WHERE encadeados.
+     * Ex: $model->where('usuario_id', '=', 1)->where('id', '=', 5)->delete();
+     */
+    public function delete(): bool
+    {
+        $sql = "DELETE FROM {$this->table}";
+        $sql .= $this->buildWhere();
+
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($this->params);
+    }
+
+    /**
      * Busca o primeiro registro que bater com a query ou null.
      */
     public function first(): ?object
