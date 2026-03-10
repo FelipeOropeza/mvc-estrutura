@@ -88,15 +88,14 @@ class Handler
                     'errors' => $exception->errors
                 ], 422);
             } else {
-                session()->flash('_flash_errors', $exception->errors);
-                
-                // Removemos arquivos do Old Input pois não podem ser serializados na sessão
-                // E também não podem ser preenchidos de volta no HTML por segurança
-                $cleanOld = array_filter($exception->oldInput, fn($v) => !($v instanceof \Core\Http\UploadedFile));
-                
-                session()->flash('_flash_old', $cleanOld);
-                $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+                session()->flash('errors', $exception->errors);
+                session()->flash('errors_origin', parse_url($_SERVER['HTTP_REFERER'] ?? '/', PHP_URL_PATH));
 
+                $cleanOld = array_filter($exception->oldInput, fn($v) => !($v instanceof \Core\Http\UploadedFile));
+                session()->flash('old', $cleanOld);
+                session()->flash('old_origin', parse_url($_SERVER['HTTP_REFERER'] ?? '/', PHP_URL_PATH));
+
+                $referer = $_SERVER['HTTP_REFERER'] ?? '/';
                 return \Core\Http\Response::makeRedirect($referer);
             }
         }
