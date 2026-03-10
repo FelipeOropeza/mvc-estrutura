@@ -17,6 +17,7 @@ RUN install-php-extensions \
     zip \
     bcmath \
     opcache \
+    redis \
     @composer
 
 # 4. TRUQUE MÁGICO PARA A RENDER:
