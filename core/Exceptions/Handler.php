@@ -89,7 +89,12 @@ class Handler
                 ], 422);
             } else {
                 session()->flash('_flash_errors', $exception->errors);
-                session()->flash('_flash_old', $exception->oldInput);
+                
+                // Removemos arquivos do Old Input pois não podem ser serializados na sessão
+                // E também não podem ser preenchidos de volta no HTML por segurança
+                $cleanOld = array_filter($exception->oldInput, fn($v) => !($v instanceof \Core\Http\UploadedFile));
+                
+                session()->flash('_flash_old', $cleanOld);
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
 
                 return \Core\Http\Response::makeRedirect($referer);
