@@ -23,13 +23,6 @@ class Handler
 
     /**
      * Converte erros normais do PHP (Warnings, Notices) em Exceções para podermos tratá-los unificados.
-     * 
-     * @param int $level
-     * @param string $message
-     * @param string $file
-     * @param int $line
-     * @return void
-     * @throws ErrorException
      */
     public function handleError(int $level, string $message, string $file = '', int $line = 0): void
     {
@@ -42,9 +35,6 @@ class Handler
     /**
      * Captura qualquer exceção não tratada na aplicação formatada
      * como Response e envia para a saída padrão (Fora de contexto Kernel).
-     * 
-     * @param Throwable $exception
-     * @return void
      */
     public function handleException(Throwable $exception): void
     {
@@ -55,10 +45,6 @@ class Handler
     /**
      * Transforma qualquer Exceção em um Objeto Response Perfeito.
      * Usado fortemente pelo Kernel HTTP para previnir crashes fatais em servidores assíncronos.
-     * 
-     * @param Throwable $exception
-     * @param \Core\Http\Request|null $request
-     * @return \Core\Http\Response
      */
     public function renderException(Throwable $exception, ?\Core\Http\Request $request = null): \Core\Http\Response
     {
@@ -67,23 +53,24 @@ class Handler
             ob_end_clean();
         }
 
-        // Descobre o código de status HTTP
         $code = $exception->getCode();
-        
-        // Se for erro de banco, tentamos ser mais específicos no código HTTP (Conflict 409 para Unique)
-        if ($exception instanceof \PDOException && ($code === '23000' || str_contains($exception->getMessage(), '1062'))) {
-            $code = 409; 
-        }
-
-        if ($code < 100 || $code >= 600 || is_string($code)) {
+        $code = is_numeric($code) ? (int) $code : 500;
+        if ($code < 100 || $code >= 600) {
             $code = 500;
         }
 
-        // Verifica se quer retornar JSON (para API) ou HTML
+        // Verifica o tipo de requisição (API ou HTMX)
         $isApi = $request ? $request->isApi() : (
             (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
             (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') === 0)
         );
+        $isHtmx = function_exists('request') && request()->isHtmx();
+
+        // Obtém nível de debug
+        $debug = function_exists('env') ? env('APP_DEBUG', true) : true;
+        if (is_string($debug)) {
+            $debug = filter_var($debug, FILTER_VALIDATE_BOOLEAN);
+        }
 
         // Se for um Erro de Validação Limpo, Redirecionamos ou Formatamos o DTO sem Logar como Alerta
         if ($exception instanceof \Core\Exceptions\ValidationException) {
@@ -109,13 +96,17 @@ class Handler
             }
         }
 
-        // --- NOVO: Captura silenciosa de erros de banco para converter em mensagens amigáveis em Produção ---
-        if ($exception instanceof \PDOException && !env('APP_DEBUG', true)) {
-             // Se não for debug, logamos o erro real mas mostramos algo sutil se for duplicata
-             if ($exception->getCode() === '23000') {
-                 session()->flash('errors', ['database' => ['Este registro já existe em nossa base de dados.']]);
-                 return \Core\Http\Response::makeRedirect($_SERVER['HTTP_REFERER'] ?? '/');
-             }
+        // --- Captura silenciosa de erros de banco para conversão em Produção ---
+        if ($exception instanceof \PDOException && !$debug) {
+            $sqlState = (string) $exception->getCode();
+            $driverCode = $exception->errorInfo[1] ?? null;
+
+            if (!$isApi && ($sqlState === '23000' || $driverCode === 1062)) {
+                $originPath = parse_url($_SERVER['HTTP_REFERER'] ?? '/', PHP_URL_PATH);
+                session()->flash('errors', ['database' => ['Este registro já existe em nossa base ou é duplicado.']]);
+                session()->flash('errors_origin', $originPath);
+                return \Core\Http\Response::makeRedirect($_SERVER['HTTP_REFERER'] ?? '/');
+            }
         }
 
         // Salva silenciosamente a exceção real para os devs poderem espiar o log depois!
@@ -126,12 +117,6 @@ class Handler
             'sql_state' => ($exception instanceof \PDOException) ? $exception->getCode() : null
         ]);
 
-        // Busca se APP_DEBUG = true
-        $debug = function_exists('env') ? env('APP_DEBUG', true) : true;
-        if (is_string($debug)) {
-            $debug = filter_var($debug, FILTER_VALIDATE_BOOLEAN);
-        }
-
         $isCli = php_sapi_name() === 'cli' || php_sapi_name() === 'phpdbg';
 
         if ($isCli) {
@@ -139,11 +124,18 @@ class Handler
         } elseif ($isApi) {
             return $this->renderJson($exception, (int) $code, (bool) $debug);
         } else {
-            $response = $this->renderHtml($exception, (int) $code, (bool) $debug);
+            $response = $this->renderHtml($exception, (int) $code, (bool) $debug, $isHtmx);
 
-            if (function_exists('request') && request()->isHtmx()) {
+            if ($isHtmx) {
+                // Retarget pro final do body renderizando um overlay absoluto
                 $response->setHeader('HX-Retarget', 'body');
-                $response->setHeader('HX-Reswap', 'innerHTML');
+                $response->setHeader('HX-Reswap', 'beforeend');
+
+                // HTMX ignora respostas 4xx/5xx e não renderiza. 
+                // Mandamos 200 no debug para forçar exibição do modal.
+                if ($debug) {
+                    $response->setStatusCode(200);
+                }
             }
 
             return $response;
@@ -197,7 +189,7 @@ class Handler
     /**
      * Retorna a resposta de erro em formato HTML (Objeto Response).
      */
-    private function renderHtml(Throwable $exception, int $code, bool $debug): \Core\Http\Response
+    private function renderHtml(Throwable $exception, int $code, bool $debug, bool $isHtmx = false): \Core\Http\Response
     {
         if ($debug) {
             $dbDiagnosis = '';
@@ -211,37 +203,8 @@ class Handler
                 </div>';
             }
 
-            $content = '
-            <!DOCTYPE html>
-            <html lang="pt-br">
-            <head>
-                <meta charset="UTF-8">
-                <title>Erro de Execução :: MVC Base</title>
-                <style>
-                    :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --danger: #ef4444; --accent: #38bdf8; --warning: #f59e0b; }
-                    body { font-family: "Inter", system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 2rem; line-height: 1.5; }
-                    .container { max-width: 1100px; margin: 0 auto; }
-                    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; }
-                    h1 { color: var(--danger); font-size: 1.25rem; margin: 0; font-family: monospace; }
-                    .status { background: #fee2e2; color: #b91c1c; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: bold; }
-                    .error-box { background: var(--card); border-radius: 12px; padding: 2rem; border-left: 6px solid var(--danger); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); margin-bottom: 1rem; }
-                    .message { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; }
-                    .location { color: var(--muted); font-family: monospace; font-size: 0.95rem; border: 1px solid #334155; padding: 0.75rem; border-radius: 6px; background: #0f172a; }
-                    .location strong { color: var(--accent); }
-                    
-                    /* DB Diagnosis Styling */
-                    .db-box { background: #451a03; border: 1px solid var(--warning); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border-left: 6px solid var(--warning); }
-                    .db-title { color: var(--warning); font-weight: 800; font-size: 0.75rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
-                    .db-hint { color: #fed7aa; font-size: 1.1rem; margin-bottom: 0.75rem; font-weight: 500; }
-                    .db-code { color: #92400e; font-size: 0.8rem; font-family: monospace; }
-                    .db-code code { background: #000; padding: 2px 5px; border-radius: 4px; color: var(--warning); }
-
-                    .trace-title { display: flex; align-items: center; gap: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; font-weight: bold; }
-                    .trace { background: #020617; color: #cbd5e1; padding: 1.5rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; font-family: "Fira Code", "Cascadia Code", monospace; border: 1px solid #334155; white-space: pre-wrap; word-break: break-all; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
+            $innerContent = '
+                <div class="error-container">
                     <div class="header">
                         <h1>' . get_class($exception) . '</h1>
                         <span class="status">HTTP ' . $code . '</span>
@@ -264,9 +227,53 @@ class Handler
                     <footer style="margin-top: 3rem; text-align: center; color: var(--muted); font-size: 0.875rem;">
                         MVC Base Engineering &bull; Debug Mode Active
                     </footer>
-                </div>
-            </body>
-            </html>';
+                </div>';
+
+            $inlineStyles = '
+                <style>
+                    .htmx-error-wrapper { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --danger: #ef4444; --accent: #38bdf8; --warning: #f59e0b; color: var(--text); font-family: "Inter", system-ui, -apple-system, sans-serif; line-height: 1.5; }
+                    .error-container { max-width: 1100px; margin: 0 auto; text-align: left; }
+                    .error-container .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; }
+                    .error-container h1 { color: var(--danger); font-size: 1.25rem; margin: 0; font-family: monospace; }
+                    .error-container .status { background: #fee2e2; color: #b91c1c; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: bold; }
+                    .error-container .error-box { background: var(--card); border-radius: 12px; padding: 2rem; border-left: 6px solid var(--danger); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); margin-bottom: 1rem; }
+                    .error-container .message { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; }
+                    .error-container .location { color: var(--muted); font-family: monospace; font-size: 0.95rem; border: 1px solid #334155; padding: 0.75rem; border-radius: 6px; background: #0f172a; }
+                    .error-container .location strong { color: var(--accent); }
+                    .error-container .db-box { background: #451a03; border: 1px solid var(--warning); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border-left: 6px solid var(--warning); }
+                    .error-container .db-title { color: var(--warning); font-weight: 800; font-size: 0.75rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+                    .error-container .db-hint { color: #fed7aa; font-size: 1.1rem; margin-bottom: 0.75rem; font-weight: 500; }
+                    .error-container .db-code { color: #92400e; font-size: 0.8rem; font-family: monospace; }
+                    .error-container .db-code code { background: #000; padding: 2px 5px; border-radius: 4px; color: var(--warning); }
+                    .error-container .trace-title { display: flex; align-items: center; gap: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; font-weight: bold; }
+                    .error-container .trace { background: #020617; color: #cbd5e1; padding: 1.5rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; font-family: "Fira Code", "Cascadia Code", monospace; border: 1px solid #334155; white-space: pre-wrap; word-break: break-all; }
+                </style>';
+
+            if ($isHtmx) {
+                // Em modal de erro HTMX, enviamos um overlay isolado no DOM.
+                $content = '
+                <div id="htmx-dev-error" class="htmx-error-wrapper" style="position: fixed; inset: 0; z-index: 9999999; background: rgba(15,23,42,0.95); backdrop-filter: blur(5px); overflow-y: auto; padding: 2rem;">
+                    ' . $inlineStyles . '
+                    <div style="max-width: 1100px; margin: 0 auto 2rem; text-align: right;">
+                        <button onclick="document.getElementById(\'htmx-dev-error\').remove()" style="background: var(--danger); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer;">FECHAR ESTE ERRO (X)</button>
+                    </div>
+                    ' . $innerContent . '
+                </div>';
+            } else {
+                // Resposta HTML normal da página toda
+                $content = '
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Erro de Execução :: MVC Base</title>
+                    ' . $inlineStyles . '
+                </head>
+                <body class="htmx-error-wrapper" style="background-color: var(--bg); margin: 0; padding: 2rem;">
+                    ' . $innerContent . '
+                </body>
+                </html>';
+            }
         } else {
             $content = "
             <body style='font-family: system-ui, sans-serif; background: #f9fafb; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;'>
@@ -277,6 +284,11 @@ class Handler
                     <a href='/' style='display: inline-block; background: #2563eb; color: #fff; padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 500; margin-top: 1.5rem;'>Voltar ao Início</a>
                 </div>
             </body>";
+            
+            // Se HTMX com tela genérica, apenas limpe para tela não quebrar layout
+            if ($isHtmx) {
+                $content = "<script>alert('Ocorreu um erro interno no servidor.');</script>";
+            }
         }
 
         return new \Core\Http\Response($content, $code);
