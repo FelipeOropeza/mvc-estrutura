@@ -299,7 +299,7 @@ class Handler
                 return "<strong>Entrada Duplicada:</strong> Você está tentando salvar um valor que já existe em uma coluna com índice <code>UNIQUE</code>. <br><small>Sugestão: Verifique se o registro já não foi criado ou use o atributo <code>#[Unique]</code> no seu DTO.</small>";
             }
             if (str_contains($msg, 'cannot be null') || str_contains($msg, 'Column') && str_contains($msg, 'null')) {
-                return "<strong>Valor Obrigatório Ausente:</strong> Você tentou salvar um valor nulo em uma coluna que não aceita <code>NULL</code>. <br><small>Sugestão: Verifique se todos os campos obrigatórios estão no <code>$fillable</code> da Model ou validados no DTO.</small>";
+                return "<strong>Valor Obrigatório Ausente:</strong> Você tentou salvar um valor nulo em uma coluna que não aceita <code>NULL</code>. <br><small>Sugestão: Verifique se todos os campos obrigatórios estão no <code>\$fillable</code> da Model ou validados no DTO.</small>";
             }
             if (str_contains($msg, 'a foreign key constraint fails') || in_array($driverCode, [1451, 1452])) {
                 return "<strong>Violação de Chave Estrangeira:</strong> Você tentou relacionar este registro com um ID que não existe na outra tabela, ou tentou apagar um registro que possui dependências.";
@@ -308,7 +308,7 @@ class Handler
 
         // 2. ESTRUTURA (Tabelas ou Colunas faltando)
         if ($code === '42S02' || str_contains($msg, 'Base table or view not found')) {
-            return "<strong>Tabela Inexistente:</strong> A tabela solicitada na Model não foi encontrada no banco atual. <br><small>Sugestão: Verifique o nome na propriedade <code>$table</code> da sua Model ou rode as migrations.</small>";
+            return "<strong>Tabela Inexistente:</strong> A tabela solicitada na Model não foi encontrada no banco atual. <br><small>Sugestão: Verifique o nome na propriedade <code>\$table</code> da sua Model ou rode as migrations.</small>";
         }
         if ($code === '42S22' || str_contains($msg, 'Unknown column')) {
             return "<strong>Coluna Inexistente:</strong> A query tentou acessar uma coluna que não existe nesta tabela. <br><small>Sugestão: Verifique se o nome do campo no banco coincide com a lógica do seu Model ou QueryBuilder.</small>";
