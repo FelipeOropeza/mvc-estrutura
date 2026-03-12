@@ -40,7 +40,6 @@ class AttributeRouteScanner
             $className = $baseNamespace . ltrim($relativePath, '\\');
 
             if (!class_exists($className)) {
-                // Tenta fazer um require caso não tenha sido autoloaded ainda (raro mas seguro)
                 require_once $filePath;
                 if (!class_exists($className)) {
                     continue;
@@ -56,30 +55,34 @@ class AttributeRouteScanner
         $reflectionClass = new ReflectionClass($className);
 
         foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-
             $routeAdded = false;
 
             foreach ($this->supportedAttributes as $attributeClass => $httpMethod) {
                 $attributes = $method->getAttributes($attributeClass);
-
+                
                 foreach ($attributes as $attribute) {
                     $routeArgs = $attribute->getArguments();
-                    $uri = isset($routeArgs[0]) ? strval($routeArgs[0]) : '/';
+                    
+                    $uri = $routeArgs[0] ?? $routeArgs['uri'] ?? '/';
+                    $name = $routeArgs[1] ?? $routeArgs['name'] ?? null;
 
-                    // Registra a rota
-                    $router->{strtolower($httpMethod)}($uri, [$className, $method->getName()]);
+                    // Registra a rota no roteador
+                    $router->{strtolower($httpMethod)}((string)$uri, [$className, $method->getName()]);
+
+                    if ($name) {
+                        $router->name((string)$name);
+                    }
+                    
                     $routeAdded = true;
                 }
             }
 
-            // Se a rota foi adicionada por este método, pega os atributos de Middleware
             if ($routeAdded) {
                 $middlewareAttributes = $method->getAttributes(Middleware::class);
                 foreach ($middlewareAttributes as $mwAttribute) {
                     $mwArgs = $mwAttribute->getArguments();
                     if (isset($mwArgs[0])) {
                         $classes = is_array($mwArgs[0]) ? $mwArgs[0] : [$mwArgs[0]];
-                        // Usamos o método do router que acopla na "última rota adicionada"
                         $router->middleware($classes);
                     }
                 }

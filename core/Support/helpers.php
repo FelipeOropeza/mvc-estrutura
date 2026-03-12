@@ -271,6 +271,18 @@ if (!function_exists('storage_url')) {
     }
 }
 
+if (!function_exists('storage_path')) {
+    /**
+     * Retorna o caminho físico absoluto para a pasta storage.
+     */
+    function storage_path(string $path = ''): string
+    {
+        $base = defined('STORAGE_PATH') ? STORAGE_PATH : realpath(__DIR__ . '/../../storage');
+        return $base . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '');
+    }
+}
+
+
 if (!function_exists('e')) {
     /**
      * Escapa caracteres especiais HTML para exibição segura nas Views.

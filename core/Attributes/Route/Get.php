@@ -7,5 +7,5 @@ namespace Core\Attributes\Route;
 #[\Attribute(\Attribute::TARGET_METHOD)]
 class Get
 {
-    public function __construct(public string $uri) {}
+    public function __construct(public string $uri, public ?string $name = null) {}
 }

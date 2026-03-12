@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 $app = new \Core\Foundation\Application(realpath(__DIR__ . '/../'));
 
+define('STORAGE_PATH', realpath(__DIR__ . '/../storage'));
+
 /*
 |--------------------------------------------------------------------------
 | Carregamento do Ambiente (.env)
