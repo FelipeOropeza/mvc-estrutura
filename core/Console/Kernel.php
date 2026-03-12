@@ -89,11 +89,43 @@ class Kernel
             case 'db:seed':
                 $this->dbSeed($args);
                 break;
+            case 'make:command':
+                $this->makeCommand($args);
+                break;
             default:
+                // Tenta buscar o comando nos comandos do usuário
+                if ($this->runUserCommand($command, $args)) {
+                    break;
+                }
+
                 echo "Erro: Comando não reconhecido: '$command'\n";
                 $this->showHelp();
                 exit(1);
         }
+    }
+
+    private function runUserCommand(string $commandName, array $args): bool
+    {
+        $dir = realpath(__DIR__ . '/../../') . '/app/Console/Commands';
+        if (!is_dir($dir)) {
+            return false;
+        }
+
+        $files = glob($dir . '/*.php');
+        foreach ($files as $file) {
+            $className = basename($file, '.php');
+            $fullClass = "\\App\\Console\\Commands\\$className";
+            
+            if (class_exists($fullClass) && is_subclass_of($fullClass, \Core\Console\Command::class)) {
+                $commandObj = new $fullClass();
+                if ($commandObj->getSignature() === $commandName) {
+                    $commandObj->handle($args);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function showHelp(): void
@@ -114,7 +146,8 @@ class Kernel
         echo "  make:mutator <Nome>      Cria um atributo de Mutação customizado\n";
         echo "  make:dto <Nome>          Cria um Data Transfer Object\n";
         echo "  make:seeder <Nome>       Cria uma nova classe de Seeder\n";
-        echo "  make:job <Nome>          Cria uma nova classe de Job para Fila\n\n";
+        echo "  make:job <Nome>          Cria uma nova classe de Job para Fila\n";
+        echo "  make:command <Nome>      Cria um Comando de CLI Customizado (Worker/Daemon)\n\n";
 
         echo "🗄️ Banco de Dados:\n";
         echo "  migrate                  Gera o banco e executa migrations pendentes\n";
@@ -129,7 +162,36 @@ class Kernel
         echo "⚡ Performance & Operação:\n";
         echo "  queue:work [fila]        Inicia o worker para processar jobs da fila\n";
         echo "  optimize                 Gera cache de rotas e otimiza o container\n";
-        echo "  optimize:clear           Limpa todos os caches de performance\n";
+        echo "  optimize:clear           Limpa todos os caches de performance\n\n";
+
+        // Adicionando display dinâmico dos comandos de usuário
+        $this->showUserCommandsHelp();
+    }
+
+    private function showUserCommandsHelp(): void
+    {
+        $dir = realpath(__DIR__ . '/../../') . '/app/Console/Commands';
+        if (!is_dir($dir)) return;
+
+        $files = glob($dir . '/*.php');
+        $hasCommands = false;
+
+        foreach ($files as $file) {
+            $className = basename($file, '.php');
+            $fullClass = "\\App\\Console\\Commands\\$className";
+            
+            if (class_exists($fullClass) && is_subclass_of($fullClass, \Core\Console\Command::class)) {
+                if (!$hasCommands) {
+                    echo "🧑‍💻 Comandos Customizados da Aplicação:\n";
+                    $hasCommands = true;
+                }
+                $commandObj = new $fullClass();
+                $sig = str_pad($commandObj->getSignature(), 25);
+                echo "  $sig " . $commandObj->getDescription() . "\n";
+            }
+        }
+        
+        if ($hasCommands) echo "\n";
     }
 
     private function makeMigration(array $args): void
@@ -1093,5 +1155,33 @@ class Kernel
 
         $content = $this->renderTemplate('job', ['{{className}}' => $name]);
         $this->createFile($path, $content, "Job '$name'");
+    }
+
+    private function makeCommand(array $args): void
+    {
+        if (!isset($args[1])) {
+            echo "Erro: Forneça o nome do Comando. Ex: make:command ChecarPromocoesCommand\n";
+            exit(1);
+        }
+
+        $name = $args[1];
+        if (!str_ends_with($name, 'Command')) {
+            $name .= 'Command';
+        }
+
+        $dir = realpath(__DIR__ . '/../../') . '/app/Console/Commands';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $path = $dir . '/' . $name . '.php';
+        
+        if (file_exists($path)) {
+            echo "Erro: O Comando '$name' já existe.\n";
+            exit(1);
+        }
+
+        $content = $this->renderTemplate('command', ['{{className}}' => $name]);
+        $this->createFile($path, $content, "Command '$name'");
     }
 }

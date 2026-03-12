@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Console\Commands;
+
+use Core\Console\Command;
+
+class {{className}} extends Command
+{
+    protected string $signature = 'app:custom-command';
+    protected string $description = 'Descrição do que este comando customizado faz.';
+
+    public function handle(array $args): void
+    {
+        $this->info("Comando executado com sucesso!");
+        
+        // Sua lógica em loop ou de tarefa única aqui...
+    }
+}

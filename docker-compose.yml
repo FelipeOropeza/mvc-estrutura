@@ -11,10 +11,14 @@ services:
       # A porta da esquerda (Seu PC) aponta para a porta da direita (Dentro do docker virtual)
       - "8000:8000"
     environment:
-      # Se você criar um arquivo .env depois, o Docker pode puxá-lo aqui também
       - APP_ENV=local
+      - MERCURE_PUBLISHER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
+      - MERCURE_SUBSCRIBER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
+      - MERCURE_URL=http://localhost:8000/.well-known/mercure
+      - MERCURE_PUBLIC_URL=http://localhost:8000/.well-known/mercure
     volumes:
       - .:/app
+      - ./Caddyfile:/etc/frankenphp/Caddyfile
     depends_on:
       - redis
     restart: unless-stopped

@@ -1,8 +1,17 @@
-<!-- Componente: {{className}} -->
-<div id="comp-{{className}}" class="component-wrapper">
+<!-- Componente Reativo: {{className}} -->
+<div id="comp-{{className}}" 
+     hx-get="/sua-rota-de-dados" 
+     hx-trigger="refresh-{{className}} from:body" 
+     class="component-wrapper transition-all">
     <!-- 
-       O HTMX por padrão fará atualizações neste elemento 
-       ou você pode engatinhar aqui para responder a um hx-trigger 
+       Estrutura do Componente
+       Substitua com seu HTML dinâmico ou iterador $dados 
     -->
-    <p>Componente gerado via Forge CLI!</p>
+    <div class="p-4 bg-white rounded shadow-sm border border-gray-100">
+        <p class="text-gray-500">Componente <b>{{className}}</b> criado com sucesso!</p>
+        <p class="text-xs text-blue-400 mt-2">Aguardando broadcast Mercure no tópico "modulo/{{className}}"</p>
+    </div>
 </div>
+
+<!-- Antena Mercure Invisível (Padrão do Framework) -->
+<?= mercure_listen('modulo/{{className}}', 'refresh-{{className}}') ?>

@@ -124,11 +124,8 @@ if (!function_exists('errors')) {
         $origin = session('errors_origin', null);
 
         // Se os erros vieram de outra página, ignora
-        if ($origin !== null) {
-            $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-            if ($origin !== $currentPath) {
-                return $field ? null : [];
-            }
+        if ($origin !== null && $origin !== request()->path()) {
+            return $field ? null : [];
         }
 
         $errors = session('errors', []);
@@ -150,11 +147,8 @@ if (!function_exists('old')) {
     {
         $origin = session('old_origin', null);
 
-        if ($origin !== null) {
-            $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-            if ($origin !== $currentPath) {
-                return $default;
-            }
+        if ($origin !== null && $origin !== request()->path()) {
+            return $default;
         }
 
         $oldInputs = session('old', []);
@@ -366,7 +360,75 @@ if (!function_exists('pluralize')) {
         // x, r, z → es (ex: Flux → Fluxes, Fornecedor → Fornecedores, Capaz → Capazes)
         if (in_array($lastLetter, ['x', 'r', 'z'])) return $singular . 'es';
 
-        // padrão → s (ex: User → Users, Animal → Animals)
         return $singular . 's';
+    }
+}
+
+if (!function_exists('broadcast')) {
+    /**
+     * Helper para despachar atualizações em tempo real (Server-Sent Events) via Mercure.
+     * 
+     * @param string $topic O tópico da mensagem, ex: 'chat/room/1'
+     * @param array $data Carga útil (assíncrona) que será convertida em JSON.
+     * @return string Retorna o UUID da mensagem gerada
+     */
+    function broadcast(string $topic, array $data): string
+    {
+        try {
+            $hub = app(\Symfony\Component\Mercure\HubInterface::class);
+            $update = new \Symfony\Component\Mercure\Update(
+                $topic,
+                json_encode($data)
+            );
+            return $hub->publish($update);
+        } catch (\Throwable $e) {
+            // Em caso do Mercure Hub estar offline, apenas logamos e não quebramos a request
+            logger()->error("Falha ao fazer o broadcast para [{$topic}]: " . $e->getMessage());
+            return '';
+        }
+    }
+}
+
+if (!function_exists('mercure_listen')) {
+    /**
+     * Helper para FrontEnd (View). Gera um bloco <script> que escuta um tópico no hub do Mercure
+     * e converte em um trigger event do HTMX no navegador.
+     * 
+     * @param string $topic O tópico a assinar (ex: 'supermercado/promocoes')
+     * @param string $htmxTriggerName O nome do evento que o HTMX deverá escutar (ex: 'refresh-promos')
+     * @return string Retorna o componente JS do EventSource
+     */
+    function mercure_listen(string $topic, string $htmxTriggerName): string
+    {
+        $mercureURL = env('MERCURE_PUBLIC_URL', 'http://localhost:8000/.well-known/mercure');
+        $idSafe = str_replace('-', '_', $htmxTriggerName);
+        
+        return <<<HTML
+<!-- Script Mercure Guard: $htmxTriggerName -->
+<script>
+    (function() {
+        const trigger = "{$htmxTriggerName}";
+        // Evita duplicar listeners se o componente for recarregado via HTMX
+        if (window['mercure_active_' + "{$idSafe}"]) return;
+        window['mercure_active_' + "{$idSafe}"] = true;
+
+        const url = new URL("{$mercureURL}");
+        url.searchParams.append('topic', "{$topic}");
+
+        console.log("📡 Iniciando ouvinte Mercure para [" + "{$topic}" + "] -> Trigger: " + trigger);
+        const eventSource = new EventSource(url);
+
+        eventSource.onmessage = event => {
+            const data = JSON.parse(event.data);
+            console.log("⚡ Broadcast Recebido [" + trigger + "]:", data);
+            document.body.dispatchEvent(new CustomEvent(trigger, { detail: data }));
+        };
+
+        eventSource.onerror = err => {
+            console.warn("⚠️ Erro na conexão Mercure para " + trigger + ". O browser tentará reconectar.");
+        };
+    })();
+</script>
+HTML;
     }
 }
