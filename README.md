@@ -7,8 +7,9 @@ Um esqueleto PHP puro, ultra-leve e focado em performance (Stateless). Construí
 * **Arquitetura Stateless**: Sem vazamentos globais (Globals como `$_GET` e `$_POST` são embalados no objeto `Request`). 
 * **Container de Injeção de Dependências (IoC)**: Autowiring de classes inteligentes via Reflection API. Funções Globais como `app()` e `logger()`.
 * **Sessões e Proteção CSRF Nativa**: Gerenciamento de sessão Orientado a Objetos integrado ao pipeline (Middlewares) e proteção fácil de formulários contra ataques Cross-Site Request Forgery.
-* **Router Expressivo e Rápido**: Suporte a parâmetros dinâmicos na URL, **Grupos de Rotas** (com prefixos e middlewares aninhados) e Namespaces limpos.
-* **Docker & FrankenPHP Integrado**: Ambiente pronto para a nuvem (Render, AWS) e desenvolvedores. Utiliza a imagem oficial do FrankenPHP baseada em Debian operando com o cobiçado **Worker Mode** para performance extrema na casa dos milissegundos.
+* **Router Expressivo e Rápido**: Suporte a parâmetros dinâmicos na URL, **Grupos de Rotas** e agora com suporte total a **PHP 8 Attributes** (`#[Get]`, `#[Post]`) diretamente nos Controllers para maior produtividade.
+* **Eventos em Tempo Real (Mercure)**: Integração nativa com o hub Mercure para broadcasting de eventos instantâneos. Use o helper `broadcast()` no PHP e receba atualizações automáticas no front-end via HTMX ou JavaScript puro.
+* **Docker & FrankenPHP Integrado**: Ambiente pronto para a nuvem. Utiliza a imagem oficial do FrankenPHP com suporte nativo ao **Mercure Hub** (embutido no Caddy) e operando com o **Worker Mode** para performance extrema na casa dos milissegundos.
 * **Service Providers Lifecycle**: Motor flexível similar ao Laravel, permitindo construção modular de recursos através de classes simples no `config/app.php`.
 * **Database Avançado (ORM)**: Modelos trazem um `QueryBuilder` embutido para queries complexas fluidas, Suporte a Relacionamentos (`belongsTo`, `hasMany`), e Gatilhos de Mutação e Validação acoplados.
 * **Upload Seguro e Storage**: Abstração Orientada a Objetos robusta para manipulação e validação de `UploadedFile`.

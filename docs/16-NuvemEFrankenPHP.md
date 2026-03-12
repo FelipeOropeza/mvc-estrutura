@@ -17,3 +17,18 @@ if (isset($_SERVER['FRANKENPHP_WORKER'])) {
 ```
 
 Isso significa que o banco de dados e os controllers só iniciam **uma única vez** (durante o Boot da Máquina no host) e ficam quentes esperando o usuário de braços abertos num Loop infinito em Memória RAM, baixando a casa de requisições do seu App de `~50ms` para insanos e absurdos **~2ms** na resposta final de Database! Desfrute desse salto de performance imbatível do PHP moderno!
+
+## Mercure Hub Integrado (Real-time)
+O FrankenPHP já vem com o **Mercure Hub** embutido via Caddy. Isso elimina a necessidade de serviços externos como Pusher para ter funcionalidades real-time.
+
+A configuração no `Caddyfile` permite que o servidor gerencie as conexões persistentes (SSE):
+```caddy
+mercure {
+    publisher_jwt !ChangeThisMercureHubJWTSecretKey!
+    subscriber_jwt !ChangeThisMercureHubJWTSecretKey!
+    anonymous
+    subscriptions
+}
+```
+
+Combinado com o helper `broadcast()` no backend e HTMX no frontend, você consegue criar Chats, dashboards e notificações instantâneas com pouquíssimas linhas de código.

@@ -36,14 +36,16 @@ use Core\Attributes\Route\Post;
 use Core\Attributes\Route\Middleware;
 
 class ProdutoController {
-    #[Get('/produtos')]
+    #[Get('/produtos', name: 'produtos.index')]
     public function index() { ... }
 
-    #[Get('/produto/{id}')]
+    #[Get('/produto/{id}', name: 'produtos.show')]
     #[Middleware(AuthMiddleware::class)]
     public function show($id) { ... }
 }
 ```
+
+Agora você pode usar o helper `route('produtos.index')` mesmo para rotas definidas via atributos!
 
 > [!TIP]
 > Quando usar Atributos, você não precisa registrar a rota no `web.php`. O framework faz um scanner automático da pasta `app/Controllers`.

@@ -163,6 +163,38 @@ $dsn   = env('DB_HOST', '127.0.0.1');
 
 ---
 
+---
+
+## `storage_path(string $path = '')`
+Retorna o caminho absoluto para o diretório de armazenamento (`/storage`).
+```php
+$path = storage_path('app/uploads/foto.jpg');
+// Resultado: "C:/.../storage/app/uploads/foto.jpg"
+```
+
+---
+
+## `broadcast(string $topic, array $data)`
+Dispara um evento em tempo real para o **Mercure Hub**. Qualquer cliente ouvindo este tópico receberá os dados instantaneamente.
+```php
+broadcast('chat/sala-1', ['message' => 'Olá pessoal!', 'user' => 'Felipe']);
+```
+
+---
+
+## `mercure_listen(string $topic, string $htmxTriggerName)`
+**Helper de View.** Gera um componente `<script>` que escuta um tópico do Mercure e dispara um evento do HTMX no navegador.
+```php
+// Na view:
+<?= mercure_listen('chat/sala-1', 'refresh-chat') ?>
+
+<div hx-get="/chat/messages" hx-trigger="refresh-chat from:body">
+    <!-- As mensagens serão recarregadas via HTMX quando houver um broadcast -->
+</div>
+```
+
+---
+
 ## `logger()`
 Retorna a instância do Logger para gravar no arquivo `storage/logs/app.log`.
 ```php

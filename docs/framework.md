@@ -26,6 +26,7 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 18. [Sistema de E-mails (PHPMailer)](18-Emails.md)
 19. [Filas e Jobs Assíncronos](19-Filas-E-Jobs.md)
 20. [Sistema de Cache (File/Redis)](20-Cache.md)
+21. [Eventos em Tempo Real (Mercure)](21-MercureRealTime.md)
 
 ---
 

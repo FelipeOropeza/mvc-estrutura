@@ -1,6 +1,8 @@
 # Cache e Sessões em Alta Velocidade (Redis)
 
-O framework suporta dois drivers de sessão: **File** (padrão) e **Redis** (alta performance para produção).
+O framework suporta dois drivers de sessão: **File** (padrão) e **Redis** (alta performance para produção). 
+
+Ambos os drivers foram otimizados para o **FrankenPHP Worker Mode**, utilizando leitura/escrita não-bloqueante (sem lock de arquivo nativo do PHP) para garantir que múltiplas requisições paralelas do mesmo usuário não causem gargalos.
 
 ---
 
