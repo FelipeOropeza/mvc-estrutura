@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Controllers;
+
+use Core\Http\Controller;
+use Core\Attributes\Route\Get;
+use Core\Attributes\Route\Post;
+use App\Models\Notice;
+
+class NoticeController extends Controller
+{
+    #[Get('/avisos')]
+    public function index()
+    {
+        $avisos = (new Notice())->newQuery()->orderBy('id', 'DESC')->get();
+        return view('avisos/index', ['avisos' => $avisos]);
+    }
+
+    #[Get('/avisos/lista')]
+    public function lista()
+    {
+        $avisos = (new Notice())->newQuery()->orderBy('id', 'DESC')->get();
+        return response(view('avisos/partials/tabela', ['avisos' => $avisos]))
+               ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+               ->setHeader('Pragma', 'no-cache');
+    }
+
+    #[Post('/avisos/criar')]
+    public function store()
+    {
+        $texto = request()->get('texto');
+        
+        if ($texto) {
+            (new Notice())->insert(['texto' => $texto]);
+            
+            // Dispara o evento para todos os ouvintes do Mercure
+            broadcast('avisos-globais', [
+                'mensagem' => 'Novo aviso!',
+                'texto' => $texto
+            ]);
+        }
+
+        if (request()->isHtmx()) {
+            return response('');
+        }
+
+        return response()->redirect('/avisos');
+    }
+}

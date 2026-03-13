@@ -1,0 +1,21 @@
+<?php
+
+use Core\Database\Schema\Blueprint;
+use Core\Database\Schema\Schema;
+
+class CreateAvisosTable
+{
+    public function up(): void
+    {
+        Schema::create('avisos', function (Blueprint $table) {
+            $table->id();
+            $table->string('texto');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('avisos');
+    }
+}

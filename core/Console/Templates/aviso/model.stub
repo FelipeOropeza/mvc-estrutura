@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Models;
+
+use Core\Database\Model;
+
+class Notice extends Model
+{
+    protected ?string $table = 'avisos';
+    protected array $fillable = ['texto'];
+}

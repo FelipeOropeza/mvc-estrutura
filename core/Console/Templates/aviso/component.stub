@@ -1,0 +1,9 @@
+<div class="component-wrapper">
+    <div class="text-center p-2 htmx-indicator" id="aviso-spinner">
+        <div class="spinner-border spinner-border-sm text-primary"></div>
+    </div>
+    <div id="aviso-container" hx-get="/avisos/lista" hx-trigger="refresh-avisos from:body" hx-swap="innerHTML" hx-indicator="#aviso-spinner">
+        <?php $this->include('avisos/partials/tabela', ['avisos' => $avisos]); ?>
+    </div>
+</div>
+<?= mercure_listen('avisos-globais', 'refresh-avisos') ?>

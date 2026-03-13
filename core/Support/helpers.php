@@ -433,7 +433,7 @@ if (!function_exists('mercure_listen')) {
         eventSource.onmessage = event => {
             const data = JSON.parse(event.data);
             console.log("⚡ Broadcast Recebido [" + trigger + "]:", data);
-            document.body.dispatchEvent(new CustomEvent(trigger, { detail: data }));
+            document.body.dispatchEvent(new CustomEvent(trigger, { detail: data, bubbles: true }));
         };
 
         eventSource.onerror = err => {

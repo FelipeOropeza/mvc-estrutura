@@ -85,8 +85,13 @@ php forge migrate
 php forge setup:engine twig
 php forge setup:auth
 php forge setup:api
+php forge setup:aviso
 php forge queue:work
 ```
+
+## Exemplos Reais
+
+* [**Avisos em Tempo Real**](docs/REALTIME_DEMO.md): Guia prático para testar o sistema de notificações instantâneas com HTMX e Mercure.
 
 ## Licença
 

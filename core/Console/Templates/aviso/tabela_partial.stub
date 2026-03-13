@@ -1,0 +1,19 @@
+<div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+    <small class="text-muted"><i class="bi bi-clock"></i> Atualização: <?= date('H:i:s') ?></small>
+    <span class="badge bg-secondary"><?= count($avisos) ?> mensagens</span>
+</div>
+<ul class="list-group list-group-flush">
+    <?php if (empty($avisos)): ?>
+        <li class="list-group-item text-center py-4 text-muted">Nenhum aviso ainda.</li>
+    <?php else: ?>
+        <?php foreach ($avisos as $aviso): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-info-circle me-2 text-primary"></i>
+                    <?= e($aviso->texto) ?>
+                </div>
+                <small class="text-muted" style="font-size: 0.7rem;"><?= (new DateTime($aviso->created_at))->format('d/m H:i') ?></small>
+            </li>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</ul>

@@ -6,11 +6,21 @@ namespace Core\Http;
 
 class Session
 {
+    /**
+     * Mantém uma referência ao handler para evitar Garbage Collection em Worker Mode
+     */
+    protected ?\SessionHandlerInterface $handler = null;
+
     public function start(): void
     {
+        // Se já houver uma sessão ativa de uma request anterior (comum em Worker Mode do FrankenPHP), 
+        // nós a fechamos para garantir que o session_start() seguinte carregue os dados REAIS do ID atual.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+            $_SESSION = []; // Limpa o global para o próximo carregamento
+        }
+
         if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-            // Em ambientes Long-Running (como FrankenPHP), a sessão PHP nativa usa I/O block travando requests.
-            // Para resolver, habilitamos nosso Custom Session Handler desprovido do native locked read/writes.
             $driver = function_exists('env') ? env('SESSION_DRIVER', 'file') : 'file';
 
             if ($driver === 'redis') {
@@ -19,30 +29,45 @@ class Session
                 $password = function_exists('env') ? env('REDIS_PASSWORD', '') : '';
 
                 try {
-                    $handler = new \Core\Http\Session\RedisSessionHandler($host, (int) $port, $password);
-                } catch (\Exception $e) {
-                    // Fallback de emergência para FileSessionHandler caso Redis caia
+                    $this->handler = new \Core\Http\Session\RedisSessionHandler($host, (int) $port, $password);
+                } catch (\Throwable $e) {
                     error_log("Redis Session Error: " . $e->getMessage() . " - Fallback para FileSessionHandler ativado.");
-
-                    $driver = 'file'; // Garante o GC padrão
+                    $driver = 'file'; 
                     $path = __DIR__ . '/../../storage/framework/sessions';
-                    $handler = new \Core\Http\Session\FileSessionHandler($path);
+                    $this->handler = new \Core\Http\Session\FileSessionHandler($path);
                 }
             } else {
-                // Arquivo livre sem trava de concorrência massiva
                 $path = __DIR__ . '/../../storage/framework/sessions';
-                $handler = new \Core\Http\Session\FileSessionHandler($path);
+                $this->handler = new \Core\Http\Session\FileSessionHandler($path);
             }
 
-            // Avisa o PHP para usar nossaclasse como guardiã de $_SESSION
-            session_set_save_handler($handler, true);
+            session_set_save_handler($this->handler, true);
 
-            // Garante que o PHP não faça garbage collection bagunçado nos discos se não for driver de arquivo nativo.
             if ($driver === 'redis') {
-                ini_set('session.gc_probability', '0'); // O Redis lida com o TTL (setex) por conta própria
+                ini_set('session.gc_probability', '0');
             }
 
-            session_start();
+            try {
+                session_start();
+            } catch (\Throwable $e) {
+                // Se o session_start() falhar (comum se o handler travar), tentamos resetar para file
+                error_log("Session Start Failure: " . $e->getMessage() . " - Forçando fallback para FileSession.");
+                
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_write_close();
+                }
+
+                $path = __DIR__ . '/../../storage/framework/sessions';
+                if (!is_dir($path)) mkdir($path, 0777, true);
+                
+                $this->handler = new \Core\Http\Session\FileSessionHandler($path);
+                session_set_save_handler($this->handler, true);
+                session_start();
+            }
+            
+            // Log para debug de consistência em modo Worker
+            $currentId = session_id();
+            logger()->debug("Sessão Iniciada [ID: {$currentId}] Driver: {$driver}");
         }
     }
 

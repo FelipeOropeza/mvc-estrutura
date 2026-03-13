@@ -92,6 +92,9 @@ class Kernel
             case 'make:command':
                 $this->makeCommand($args);
                 break;
+            case 'setup:aviso':
+                $this->setupAviso($args);
+                break;
             default:
                 // Tenta buscar o comando nos comandos do usuário
                 if ($this->runUserCommand($command, $args)) {
@@ -157,7 +160,8 @@ class Kernel
         echo "🛠️ Instalação & Setup:\n";
         echo "  setup:engine <php|twig>  Altera o motor de visualização padrão\n";
         echo "  setup:auth               Gera sistema de Autenticação Web (Session)\n";
-        echo "  setup:api                Gera sistema de Autenticação API (JWT)\n\n";
+        echo "  setup:api                Gera sistema de Autenticação API (JWT)\n";
+        echo "  setup:aviso              Gera sistema de Avisos em Tempo Real (Redis/Mercure)\n\n";
 
         echo "⚡ Performance & Operação:\n";
         echo "  queue:work [fila]        Inicia o worker para processar jobs da fila\n";
@@ -1183,5 +1187,66 @@ class Kernel
 
         $content = $this->renderTemplate('command', ['{{className}}' => $name]);
         $this->createFile($path, $content, "Command '$name'");
+    }
+
+    private function setupAviso(array $args): void
+    {
+        echo "\n🚀 \033[1;32mIniciando Geração do Sistema de Avisos Reativo\033[0m\n";
+
+        $basePath = realpath(__DIR__ . '/../../');
+
+        // 1. MIGRATION
+        echo "1/5 Gerando Migration...\n";
+        $migrationsDir = $basePath . '/database/migrations';
+        if (!is_dir($migrationsDir)) mkdir($migrationsDir, 0777, true);
+        $fileName = date('Y_m_d_His') . '_CreateAvisosTable.php';
+        $migrationContent = $this->renderTemplate('aviso/migration', []);
+        file_put_contents($migrationsDir . '/' . $fileName, $migrationContent);
+        echo "   ✅ Migration criada: $fileName\n";
+
+        // 2. MODEL
+        echo "2/5 Gerando Model...\n";
+        $modelContent = $this->renderTemplate('aviso/model', []);
+        $modelDir = $basePath . '/app/Models';
+        if (!is_dir($modelDir)) mkdir($modelDir, 0777, true);
+        file_put_contents($modelDir . '/Notice.php', $modelContent);
+        echo "   ✅ Model 'Notice' criado.\n";
+
+        // 3. CONTROLLER
+        echo "3/5 Gerando Controller...\n";
+        $controllerContent = $this->renderTemplate('aviso/controller', []);
+        $controllerDir = $basePath . '/app/Controllers';
+        if (!is_dir($controllerDir)) mkdir($controllerDir, 0777, true);
+        file_put_contents($controllerDir . '/NoticeController.php', $controllerContent);
+        echo "   ✅ Controller 'NoticeController' criado.\n";
+
+        // 4. VIEWS & PARTIALS
+        echo "4/5 Gerando Views e Partials...\n";
+        $viewsPath = $basePath . '/app/Views/avisos';
+        if (!is_dir($viewsPath . '/partials')) mkdir($viewsPath . '/partials', 0777, true);
+
+        $indexView = $this->renderTemplate('aviso/index_view', []);
+        file_put_contents($viewsPath . '/index.php', $indexView);
+
+        $tabelaPartial = $this->renderTemplate('aviso/tabela_partial', []);
+        file_put_contents($viewsPath . '/partials/tabela.php', $tabelaPartial);
+        echo "   ✅ Views criadas com sucesso.\n";
+
+        // 5. COMPONENTE
+        echo "5/5 Gerando Componente reativo...\n";
+        $componentDir = $basePath . '/app/Views/avisos/componentes';
+        if (!is_dir($componentDir)) mkdir($componentDir, 0777, true);
+        $componentPath = $componentDir . '/AvisosLista.php';
+        $componentContent = $this->renderTemplate('aviso/component', []);
+        file_put_contents($componentPath, $componentContent);
+        echo "   ✅ Componente 'AvisosLista' criado.\n";
+
+        // FINISH
+        echo "\n✨ \033[1;32mSISTEMA GERADO COM SUCESSO!\033[0m\n";
+        echo "⚙️  \033[1mPróximos Passos:\033[0m\n";
+        echo "1. No .env, mude \033[36mSESSION_DRIVER=redis\033[0m\n";
+        echo "2. No terminal: \033[36mphp forge migrate\033[0m\n";
+        echo "3. Rebuild Docker: \033[36mdocker-compose up -d --build\033[0m\n";
+        echo "\n🔗 Acesse em: \033[34mhttp://localhost:8000/avisos\033[0m\n";
     }
 }

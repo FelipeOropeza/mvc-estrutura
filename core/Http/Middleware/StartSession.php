@@ -32,6 +32,12 @@ class StartSession
         // 4. Limpa e atualiza dados da sessão (ex: envelhece o Flash)
         $this->session->ageFlashData();
 
+        // 5. IMPORTANTE: Fecha a sessão ao fim da request para liberar o lock e 
+        // garantir consistência no próximo ciclo do Worker (FrankenPHP)
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
         return $response;
     }
 }
