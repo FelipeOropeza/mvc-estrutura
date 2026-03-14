@@ -87,6 +87,30 @@ if (!$pagou) {
 }
 ```
 
+## Validação Nativa em Models (Active Record Style)
+
+Se você prefere validar os dados diretamente no Model (útil para processos que não passam por DTOs ou em scripts customizados), o formalismo de Atributos também funciona lá! Basta usar propriedades públicas no Model:
+
+```php
+class Produto extends Model {
+    #[Required('O nome é obrigatório')]
+    public string $nome;
+
+    #[Required]
+    #[IsFloat]
+    public float $preco;
+}
+
+// No seu Controller ou Script:
+$produto = new Produto();
+try {
+    $dadosValidos = $produto->validate($_POST);
+    $produto->insert($dadosValidos);
+} catch (ValidationException $e) {
+    // Tratamento automático ou manual
+}
+```
+
 ## Criando suas Próprias Regras!
 Use a Forja do Console (CLI):
 ```bash

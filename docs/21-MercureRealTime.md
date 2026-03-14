@@ -6,6 +6,23 @@ Ao usar o **FrankenPHP**, o Hub Mercure já vem configurado e pronto para uso, p
 
 ---
 
+## ⚡ Scaffold Rápido de Avisos
+
+Se você quer ver a mágica acontecer agora mesmo, o framework conta com um gerador completo de sistema de avisos:
+
+```bash
+php forge setup:aviso
+```
+
+**Este comando gera automaticamente:**
+- **Migration**: Tabela `avisos` pronta no banco.
+- **Model**: Classe `Notice` para gerenciar os dados.
+- **Controller**: `NoticeController` com lógica de envio e listagem.
+- **Views**: Telas de gerenciamento (`/avisos`).
+- **Componente reativo**: Componente HTMX que se auto-atualiza via Mercure.
+
+---
+
 ## Como Funciona?
 
 1. **Backend (Broadcast):** Você dispara um evento usando o helper `broadcast()`.

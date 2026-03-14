@@ -324,6 +324,22 @@ abstract class Model
     }
 
     /**
+     * Inclui registros deletados (Soft Deletes)
+     */
+    public function withTrashed(): QueryBuilder
+    {
+        return $this->newQuery()->withTrashed();
+    }
+
+    /**
+     * Retorna apenas registros deletados (Soft Deletes)
+     */
+    public function onlyTrashed(): QueryBuilder
+    {
+        return $this->newQuery()->onlyTrashed();
+    }
+
+    /**
      * Inicia um JOIN fluente entre tabelas.
      * Ex: $produto->join('categorias', 'categorias.id = produtos.categoria_id')->get();
      */

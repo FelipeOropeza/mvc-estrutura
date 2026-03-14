@@ -16,6 +16,8 @@ class QueryBuilder
     protected array $orWheres = [];
     protected array $params = [];
     protected array $joins = [];
+    protected bool $withTrashedValue = false;
+    protected bool $onlyTrashedValue = false;
     protected string $selects = '*';
     protected ?int $limit = null;
     protected ?int $offset = null;
@@ -131,6 +133,24 @@ class QueryBuilder
 
         $this->orWheres[] = "$column IN (" . implode(', ', $placeholders) . ")";
 
+        return $this;
+    }
+
+    public function withTrashed(): self
+    {
+        $this->withTrashedValue = true;
+        // Se estiver nos wheres o 'deleted_at IS NULL', removemos
+        $this->wheres = array_filter($this->wheres, function($w) {
+            return !str_contains($w, 'deleted_at IS NULL');
+        });
+        return $this;
+    }
+
+    public function onlyTrashed(): self
+    {
+        $this->onlyTrashedValue = true;
+        $this->withTrashed();
+        $this->whereNotNull("{$this->table}.deleted_at");
         return $this;
     }
 

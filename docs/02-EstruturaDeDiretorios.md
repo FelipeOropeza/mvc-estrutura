@@ -11,10 +11,12 @@ O framework segue uma separação lógica e profissional de pastas:
   - **`Views/`**: O visual do seu site (HTML/PHP ou Twig).
   - **`Mutators/`** e **`Rules/`**: Suas Inteligências Mágicas criadas para manipular e validar campos.
   - **`Providers/`**: Seus registradores de serviços de inicialização.
+  - **`Jobs/`**: Classes de tarefas em segundo plano (Filas).
+  - **`Console/Commands/`**: Seus comandos de CLI customizados.
 - **`bootstrap/`**: Responsável pelo script de inicialização do cache mágico e motor do framework.
 - **`config/`**: Configurações de super variáveis (`app.php`, `database.php` e `middleware.php` para aliases dos seus filtros).
 - **`core/`**: O motor do framework (Não mexa aqui dentro a não ser que vá contribuir com a arquitetura núcleo da engine).
-- **`database/`**: Configurações de Banco e **`migrations/`** de tabelas.
+- **`database/`**: Configurações de Banco, **`migrations/`** e **`seeders/`**.
 - **`public/`**: A única pasta com acesso via Web (Contém o seu Arquivo `index.php` e os seus CSS/JS/Imagens).
 - **`routes/`**: Define as URLs e Grupos de URLs disponíveis no seu App (`web.php`).
-- **`storage/logs/`**: Logs de erros escondidos (`app.log`) ocorridos em Produção.
+- **`storage/`**: Onde ficam arquivos temporários, logs (`logs/app.log`) e uploads (se usar disco local).

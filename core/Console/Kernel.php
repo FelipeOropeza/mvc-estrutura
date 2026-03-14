@@ -95,6 +95,9 @@ class Kernel
             case 'setup:aviso':
                 $this->setupAviso($args);
                 break;
+            case 'help':
+                $this->showDetailedHelp($args[1] ?? null);
+                break;
             default:
                 // Tenta buscar o comando nos comandos do usuário
                 if ($this->runUserCommand($command, $args)) {
@@ -170,6 +173,51 @@ class Kernel
 
         // Adicionando display dinâmico dos comandos de usuário
         $this->showUserCommandsHelp();
+
+        echo "💡 Dica: Use 'php forge help <comando>' para mais detalhes (em breve).\n";
+    }
+
+    private function showDetailedHelp(?string $command): void
+    {
+        if (!$command) {
+            $this->showHelp();
+            return;
+        }
+
+        switch ($command) {
+            case 'make:dto':
+                echo "Comando: make:dto <Nome>\n";
+                echo "Descrição: Cria um Data Transfer Object (DTO) com suporte a validação por atributos.\n";
+                echo "Exemplo: php forge make:dto Admin/UserDTO\n";
+                break;
+            case 'make:component':
+                echo "Comando: make:component <Nome>\n";
+                echo "Descrição: Cria um componente HTMX reativo para views PHP ou Twig.\n";
+                echo "Exemplo: php forge make:component lista_produtos\n";
+                break;
+            case 'setup:api':
+                echo "Comando: setup:api\n";
+                echo "Descrição: Gera scaffold completo de API Stateless com JWT (Auth, DTOs, Middleware, Rotas).\n";
+                break;
+            case 'setup:auth':
+                echo "Comando: setup:auth\n";
+                echo "Descrição: Gera sistema de autenticação tradicional baseado em Sessão (MVC).\n";
+                break;
+            case 'setup:aviso':
+                echo "Comando: setup:aviso\n";
+                echo "Descrição: Gera sistema de notificações em tempo real usando Redis e Mercure Hub.\n";
+                break;
+            case 'validate':
+                echo "Recurso: Validação por Atributos\n";
+                echo "Descrição: O framework não possui um comando 'validate' direto, mas usa Atributos do PHP 8.\n";
+                echo "Uso: Defina atributos como #[Required], #[Email] em DTOs ou Models e use o helper validate(\$dto).\n";
+                echo "Documentação: docs/06-ValidacoesEDtos.md\n";
+                break;
+            default:
+                echo "Informações detalhadas não disponíveis para o comando: '$command'\n";
+                echo "Consulte a documentação em 'docs/' para mais detalhes.\n";
+                break;
+        }
     }
 
     private function showUserCommandsHelp(): void
