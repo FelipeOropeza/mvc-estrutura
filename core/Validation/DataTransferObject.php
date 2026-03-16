@@ -21,20 +21,19 @@ abstract class DataTransferObject
 
     /**
      * Valida os dados usando os atributos de validação definidos nas propriedades da classe filha.
-     * Caso o \$data enviado seja null, automaticamente utiliza o payload enviado na Request via request()->all().
+     * Caso o $data enviado seja null, automaticamente utiliza o payload enviado na Request via request()->all().
      *
-     * @param array|null \$data Dados a serem validados contra a estrutura deste DTO.
+     * @param array|null $data Dados a serem validados contra a estrutura deste DTO.
      * @throws ValidationException
      */
     public function __construct(?array $data = null)
     {
         // 1. Hook de Autorização (Gatekeeping). Se falso, encerra o ciclo instantaneamente com 403.
         if (!$this->authorize()) {
-            // Lança uma exceção genérica ou joga um abort(403) global se o framework suportar
             throw new \Exception("Acesso negado ou não autorizado para essa requisição.", 403);
         }
 
-        // Se a pessoa não enviou o array pra preencher o DTO, pegamos da Request global (via helper ou superglobal)
+        // Se a pessoa não enviou o array pra preencher o DTO, pegamos da Request global
         $inputData = $data ?? (\function_exists('request') ? request()->all() : $_REQUEST);
 
         $validator = new Validator();
@@ -58,7 +57,7 @@ abstract class DataTransferObject
                 // Se a propriedade tiver um tipo nativo (int, float, bool), tentamos o cast
                 if ($type instanceof \ReflectionNamedType && $type->isBuiltin()) {
                     $typeName = $type->getName();
-                    if ($value !== null && $value !== '') {
+                    if ($value !== null && $value !== "") {
                         switch ($typeName) {
                             case 'int':
                                 $value = (int) $value;
@@ -73,20 +72,20 @@ abstract class DataTransferObject
                     }
                 }
 
-                $this->$key = $value;
+                // Usamos ReflectionProperty::setValue para suportar Asymmetric Visibility (PHP 8.4+)
+                // Isso permite que o DTO tenha propriedades public private(set)
+                $reflection->setValue($this, $value);
             }
         }
     }
 
     /**
      * Converte o objeto DTO finalizado de volta em um array.
-     * Extremamente útil para jogar dentro do DB/Model ex: \$user->insert(\$dto->toArray());
      *
      * @return array
      */
     public function toArray(): array
     {
-        // Pega as properties públicas deste objeto
         return get_object_vars($this);
     }
 }

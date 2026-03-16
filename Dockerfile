@@ -1,5 +1,5 @@
 # Usamos a imagem oficial do FrankenPHP baseada no Debian (Maior compatibilidade com Cloud/Render)
-FROM dunglas/frankenphp:php8.3-bookworm
+FROM dunglas/frankenphp:php8.5-bookworm
 
 # 1. Permite que serviços em nuvem (como Render/Railway) injetem a Porta dinamicamente usando a variavel $PORT
 # Caso rode local no seu PC, ele assume a 8000

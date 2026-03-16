@@ -16,6 +16,15 @@ class Trim implements Mutator
 {
     public function mutate(string $attribute, mixed $value): mixed
     {
-        return is_string($value) ? trim($value) : $value;
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        // mb_trim está disponível a partir do PHP 8.4
+        if (function_exists('mb_trim')) {
+            return mb_trim($value);
+        }
+
+        return trim($value);
     }
 }

@@ -38,7 +38,7 @@ class Response
     /**
      * Dispara a Resposta final (Cuidado no FrankenPHP, prefira retorno da Response).
      */
-    public function send(string $data = null, int $status = null): void
+    public function send(?string $data = null, ?int $status = null): void
     {
         if ($data !== null) {
             $this->content = $data;
