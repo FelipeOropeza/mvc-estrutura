@@ -41,6 +41,18 @@ class Session
                 $this->handler = new \Core\Http\Session\FileSessionHandler($path);
             }
 
+            // Hardening de Cookies de Sessão (OWASP)
+            if (!headers_sent()) {
+                session_set_cookie_params([
+                    'lifetime' => (int) ini_get('session.gc_maxlifetime') ?: 7200,
+                    'path' => '/',
+                    'domain' => '',
+                    'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
+            }
+
             session_set_save_handler($this->handler, true);
 
             if ($driver === 'redis') {

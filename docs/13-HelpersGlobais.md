@@ -195,9 +195,21 @@ broadcast('chat/sala-1', ['message' => 'Olá pessoal!', 'user' => 'Felipe']);
 
 ---
 
+---
+
 ## `logger()`
 Retorna a instância do Logger para gravar no arquivo `storage/logs/app.log`.
 ```php
 logger()->info('Produto criado', ['id' => $id]);
 logger()->error('Falha no pagamento', ['erro' => $e->getMessage()]);
+```
+
+---
+
+## `pluralize(string $singular)`
+Helper básico usado pelo core para transformar o nome da classe Model no nome da tabela (seguindo padrões básicos pt-BR e en).
+```php
+echo pluralize('Produto');   // "Produtos"
+echo pluralize('Categoria'); // "Categorias"
+echo pluralize('User');      // "Users"
 ```

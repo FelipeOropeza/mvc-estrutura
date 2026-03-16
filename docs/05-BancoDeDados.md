@@ -60,6 +60,23 @@ $especiais = $produtoModel
 
 ---
 
+## Agrupamento de Condições (Filtros Avançados)
+
+Para criar grupos de condições (como (A AND B) OR (C AND D)), você pode usar Closures no `where` ou `orWhere`:
+
+```php
+// SELECT * FROM produtos WHERE status = 'ativo' AND (preco < 10 OR preco > 100)
+$produtos = (new Produto())
+    ->where('status', 'ativo')
+    ->where(function($query) {
+        $query->where('preco', '<', 10)
+              ->orWhere('preco', '>', 100);
+    })
+    ->get();
+```
+
+---
+
 ## Paginação
 
 Liste registros com paginação automática — traz os dados **e os metadados** de uma vez:
@@ -185,12 +202,39 @@ class Usuario extends Model {
 
 **Uso com Eager Loading (evita N+1):**
 ```php
-// Carrega usuario + endereco numa única query
-$usuarios = (new Usuario())->newQuery()->with('endereco')->get();
+// Carrega usuario + endereco numa única query (Eager Loading)
+$usuarios = (new Usuario())->with('endereco')->get();
 
 foreach ($usuarios as $usuario) {
-    echo $usuario->endereco->rua; // Sem query extra!
+    // Aqui não há consultas extras ao banco (resolve o problema N+1)
+    echo $usuario->endereco->rua; 
 }
+```
+
+---
+
+## Soft Deletes (Exclusão Lógica)
+
+O framework permite "deletar" um registro sem removê-lo fisicamente do disco, apenas marcando-o com uma data em `deleted_at`.
+
+Para ativar, adicione a propriedade na sua Model:
+
+```php
+class Produto extends Model {
+    public bool $softDeletes = true;
+}
+
+// O uso do delete() agora apenas preenche a coluna 'deleted_at'
+(new Produto())->delete(5);
+
+// Buscas normais IGNORAM os deletados automaticamente
+$todos = (new Produto())->all(); 
+
+// Para incluir os deletados na busca
+$comDeletados = (new Produto())->withTrashed()->get();
+
+// Para buscar APENAS os que foram deletados
+$lixeira = (new Produto())->onlyTrashed()->get();
 ```
 
 ---
@@ -225,6 +269,22 @@ class User extends Model {
 ```
 
 > **Aviso:** Se `$fillable` estiver vazio e `APP_DEBUG=true`, o framework emitirá um alerta no log para lembrá-lo de definí-lo.
+
+---
+
+## Ocultando Campos Sensíveis (Hidden Fields)
+
+Para evitar que campos como `senha` ou `token` sejam expostos ao converter o Model para Array ou JSON (e também no `var_dump()` / `debugInfo`), use a propriedade `$hidden`:
+
+```php
+class Usuario extends Model {
+    protected array $hidden = ['password', 'token_recuperacao'];
+}
+
+// Ao converter para array ou enviar como JSON:
+$usuario = (new Usuario())->find(1);
+return $usuario->toArray(); // 'password' e 'token_recuperacao' não estarão presentes
+```
 
 ---
 

@@ -51,6 +51,25 @@ class RegistroDTO extends DataTransferObject
 }
 ```
 
+## Mutators (Transformações Automáticas)
+
+Além de validar, os DTOs e Models podem **transformar** os dados antes mesmo de você tocá-los. O caso de uso mais comum é criptografar senhas automaticamente:
+
+```php
+use Core\Attributes\Hash;
+use Core\Attributes\Required;
+
+class UsuarioDTO extends DataTransferObject 
+{
+    #[Required]
+    public string $name;
+
+    #[Required]
+    #[Hash] // Criptografa a string usando password_hash() automaticamente!
+    public string $password;
+}
+```
+
 ## A Mágica no Controller (Autowiring e Defesa Automática)
 
 Sua interface exige a `RegistroDTO` como parâmetro e o Container faz a injeção cruzada na rota com os disparos via Reflection `Request`. Se as regras de atributos falharem, o Controller **nem chega a ser iniciado**. O usuário recebe automaticamente o *Redirect* de erro com as Flash messages pra interface. O Controller agora só trabalha em paz!

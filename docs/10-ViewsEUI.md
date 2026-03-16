@@ -67,4 +67,25 @@ O Framework mantém sessões invisíveis "Flash" que expiram e apagam no Reload 
     <!-- Mostre O ERRO mágico do #[Email('..')] de sua Model abaixo do Campo usando o errors()! -->
     <span style="color:red;"><?= errors('email') ?></span>
 </form>
+
+---
+
+## Suporte Nativo ao HTMX (Fragmentos Automáticos)
+
+O framework possui integração profunda com o [HTMX](https://htmx.org/). Uma das funcionalidades mais poderosas é o **Descarte Automático de Layout**.
+
+Se você está usando `hx-get` ou qualquer método do HTMX, o motor de visualização (`PhpEngine`) detecta o cabeçalho `HX-Request` e **ignora o Layout Mestre**, retornando apenas o miolo da View.
+
+**Exemplo no Controller:**
+```php
+public function listagem(Request $request) {
+    $produtos = (new Produto())->all();
+    
+    // Se for HTMX, retorna apenas o HTML da tabela. 
+    // Se for acesso direto pela URL, retorna a página completa com topo e menu!
+    return view('admin/produtos/tabela', compact('produtos'));
+}
+```
+
+Isso elimina a necessidade de criar arquivos separados para "pedaços" da tela e "páginas completas". O mesmo arquivo de view funciona para ambos!
 ```

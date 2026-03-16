@@ -27,7 +27,10 @@ class AuthMiddleware
 
 ## Configuração de Middlewares (Apelidos e Grupos)
 No arquivo `config/middleware.php`, nós gerimos como o sistema injeta ou agrupa filtros ao redor de rotas.
-* **globais:** Rodam em todas as rotas (Como Iniciador de Sessões e tratamento CORS).
+* **globais:** Rodam em todas as rotas. Atualmente incluem:
+    * `SecurityHeaders`: Proteção contra Clickjacking e XSS.
+    * `HandleCors`: Gerenciamento de acessos externos.
+    * `StartSession`: Inicialização automática da sessão.
 * **aliases:** Exemplo: Associar a string `'auth'` à classe `AuthMiddleware::class`. Isso permite chamar na rota: `->middleware('auth')`.
 * **admin:** O scaffold `php forge setup:auth` já cria o `AdminMiddleware::class` para você gerenciar permissões de cargo/role de forma simples.
 * **groups:** Agrupar middlewares para blocos de rotas parecidas (ex: `web` para Views HTML contendo proteção CSRF, ou `api` para Endpoints).
@@ -41,8 +44,24 @@ Route::get('/painel', [PainelController::class, 'index'])->middleware('auth');
 Route::get('/seguro', [SafeController::class, 'index'])->middleware([\App\Middleware\AuthMiddleware::class]);
 ```
 
+---
+
+## Proteção de Cabeçalhos (Security Headers)
+
+O Framework injeta automaticamente cabeçalhos de segurança em todas as respostas através do middleware global `SecurityHeaders`:
+
+*   **X-Frame-Options: SAMEORIGIN**: Impede que seu site seja carregado dentro de frames/iframes de outros domínios (Clickjacking).
+*   **X-Content-Type-Options: nosniff**: Impede o navegador de tentar adivinhar o tipo de conteúdo, forçando o uso do MIME type declarado.
+*   **X-XSS-Protection**: Ativa proteções básicas de XSS no navegador.
+*   **Referrer-Policy**: Controla quais informações de referência são enviadas ao navegar para outros sites.
+
+---
+
 ## Proteção Nativa (CSRF Forms)
-Sempre que for submeter um Database (POST/DELETE/PUT), você **precisa** adicionar o campo oculto mágico gerado na View que contorna a submissão CSRF gerada por um atacante (VerifyCsrfToken é nativamente habilitado no núcleo do App).
+
+A proteção CSRF agora está **ativada por padrão** no grupo de rotas `web` através do middleware `VerifyCsrfToken`. 
+
+Sempre que for submeter um formulário (POST/DELETE/PUT), você **precisa** adicionar o campo oculto gerado pelo helper `csrf_field()`:
 ```html
 <form action="/salvar" method="POST">
     <?= csrf_field() ?> <!-- Vital -->
