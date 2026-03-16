@@ -7,7 +7,7 @@ namespace Core\Database;
 use PDO;
 
 #[\AllowDynamicProperties]
-abstract class Model
+abstract class Model implements \JsonSerializable
 {
     /** @var PDO */
     protected PDO $db;
@@ -20,6 +20,9 @@ abstract class Model
 
     /** @var array Lista de colunas seguras e permitidas para serem manipuladas em massa */
     protected array $fillable = [];
+
+    /** @var array Lista de colunas que devem ser ocultadas em debugInfo, JSON e Array */
+    protected array $hidden = [];
 
     /** @var bool Ativa/Desativa controle automático das colunas created_at e updated_at */
     public bool $timestamps = true;
@@ -73,6 +76,16 @@ abstract class Model
         }
 
         return $this->$name ?? null;
+    }
+
+    /**
+     * Verifica se uma relação ou propriedade existe (necessário para empty() e isset())
+     */
+    public function __isset(string $name): bool
+    {
+        return property_exists($this, $name) || 
+               array_key_exists($name, $this->loadedRelations) || 
+               method_exists($this, $name);
     }
 
     public function setRelation(string $name, mixed $value): void
@@ -488,5 +501,50 @@ abstract class Model
     public function transaction(callable $callback): mixed
     {
         return \Core\Database\Connection::transaction($callback);
+    }
+
+    /**
+     * Converte o model para array, respeitando os campos ocultos.
+     */
+    public function toArray(): array
+    {
+        $data = get_object_vars($this);
+        
+        // Remove propriedades internas do framework
+        unset($data['db'], $data['table'], $data['primaryKey'], $data['fillable'], $data['hidden'], $data['timestamps'], $data['softDeletes'], $data['loadedRelations'], $data['relationDefinitionMode']);
+
+        // Adiciona as relações carregadas
+        foreach ($this->loadedRelations as $key => $value) {
+            if ($value instanceof Model) {
+                $data[$key] = $value->toArray();
+            } elseif (is_array($value)) {
+                $data[$key] = array_map(fn($item) => $item instanceof Model ? $item->toArray() : $item, $value);
+            } else {
+                $data[$key] = $value;
+            }
+        }
+
+        // Remove campos protegidos (hidden)
+        foreach ($this->hidden as $field) {
+            unset($data[$field]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Suporte para json_encode()
+     */
+    public function jsonSerialize(): mixed
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * Controla o que aparece no var_dump() e debugadores
+     */
+    public function __debugInfo(): array
+    {
+        return $this->toArray();
     }
 }
