@@ -358,6 +358,46 @@ abstract class Model
     }
 
     /**
+     * Inicia o Eager Loading de relações.
+     */
+    public function with(string|array $relations): QueryBuilder
+    {
+        return $this->newQuery()->with($relations);
+    }
+
+    /**
+     * Ordena os resultados.
+     */
+    public function orderBy(string $column, string $direction = 'ASC'): QueryBuilder
+    {
+        return $this->newQuery()->orderBy($column, $direction);
+    }
+
+    /**
+     * Limita os resultados.
+     */
+    public function limit(int $limit): QueryBuilder
+    {
+        return $this->newQuery()->limit($limit);
+    }
+
+    /**
+     * Define o offset.
+     */
+    public function offset(int $offset): QueryBuilder
+    {
+        return $this->newQuery()->offset($offset);
+    }
+
+    /**
+     * Pega o primeiro registro.
+     */
+    public function first(): ?static
+    {
+        return $this->newQuery()->first();
+    }
+
+    /**
      * Relacionamento 1:1 - Esta Model "Pertence A" Outra.
      * Ex: $produto->categoria() >> belongsTo(Categoria::class, 'categoria_id')
      */
