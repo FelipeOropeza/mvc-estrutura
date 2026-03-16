@@ -76,15 +76,22 @@ class QueryBuilder
         return $this;
     }
 
-    public function where(string $column, string $operator, mixed $value = null): self
+    public function where(string|\Closure $column, ?string $operator = null, mixed $value = null): self
     {
+        if ($column instanceof \Closure) {
+            $subQuery = new self($this->db, $this->table, $this->class);
+            $column($subQuery);
+            $this->wheres[] = '(' . $subQuery->buildRawWhere() . ')';
+            $this->params = array_merge($this->params, $subQuery->params);
+            return $this;
+        }
+
         // Se a pessoa omitir o operador, assume = (igual)
-        if ($value === null) {
+        if ($value === null && $operator !== null) {
             $value = $operator;
             $operator = '=';
         }
 
-        // Sanitiza o nome do parâmetro para o PDO evitar bugs se houver pontos (ex: usuarios.id -> usuarios_id_0)
         $paramName = str_replace('.', '_', $column) . '_' . count($this->params);
         $this->wheres[] = "$column $operator :$paramName";
         $this->params[$paramName] = $value;
@@ -104,9 +111,17 @@ class QueryBuilder
         return $this;
     }
 
-    public function orWhere(string $column, string $operator, mixed $value = null): self
+    public function orWhere(string|\Closure $column, ?string $operator = null, mixed $value = null): self
     {
-        if ($value === null) {
+        if ($column instanceof \Closure) {
+            $subQuery = new self($this->db, $this->table, $this->class);
+            $column($subQuery);
+            $this->orWheres[] = '(' . $subQuery->buildRawWhere() . ')';
+            $this->params = array_merge($this->params, $subQuery->params);
+            return $this;
+        }
+
+        if ($value === null && $operator !== null) {
             $value   = $operator;
             $operator = '=';
         }
@@ -116,6 +131,22 @@ class QueryBuilder
         $this->params[$paramName] = $value;
 
         return $this;
+    }
+
+    /**
+     * Retorna a parte bruta do WHERE (sem a palavra chave WHERE)
+     * Utilizado internamente para agrupamento de filtros.
+     */
+    public function buildRawWhere(): string
+    {
+        $andPart = implode(' AND ', $this->wheres);
+        $orPart  = implode(' OR ', $this->orWheres);
+
+        if ($andPart && $orPart) {
+            return "($andPart) OR ($orPart)";
+        }
+
+        return $andPart ?: $orPart;
     }
 
     public function orWhereIn(string $column, array $values): self
