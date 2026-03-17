@@ -63,15 +63,21 @@ class Blueprint
         return $this->addColumn($name, 'DATETIME');
     }
 
+    public function enum(string $name, array $values): ColumnDefinition
+    {
+        $escaped = implode(', ', array_map(fn($v) => "'{$v}'", $values));
+        return $this->addColumn($name, 'ENUM', $escaped);
+    }
+
     public function softDeletes(): void
     {
-        $this->timestamp('deleted_at')->nullable();
+        $this->datetime('deleted_at')->nullable();
     }
 
     public function timestamps(): void
     {
-        $this->timestamp('created_at')->nullable();
-        $this->timestamp('updated_at')->nullable();
+        $this->datetime('created_at')->nullable();
+        $this->datetime('updated_at')->nullable();
     }
 
     protected function addColumn(string $name, string $type, ?string $length = null): ColumnDefinition

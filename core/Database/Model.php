@@ -331,7 +331,7 @@ abstract class Model implements \JsonSerializable
      * Inicia uma verificação fluente na Tabela
      * Ex: $produto->where('preco', '>', 50)->get();
      */
-    public function where(string $column, string $operator, mixed $value = null): QueryBuilder
+    public function where(string|\Closure $column, ?string $operator = null, mixed $value = null): QueryBuilder
     {
         return $this->newQuery()->where($column, $operator, $value);
     }
@@ -373,9 +373,9 @@ abstract class Model implements \JsonSerializable
     /**
      * Inicia o Eager Loading de relações.
      */
-    public function with(string|array $relations): QueryBuilder
+    public function with(string|array $relations, string ...$extra): QueryBuilder
     {
-        return $this->newQuery()->with($relations);
+        return $this->newQuery()->with($relations, ...$extra);
     }
 
     /**
@@ -508,10 +508,23 @@ abstract class Model implements \JsonSerializable
      */
     public function toArray(): array
     {
-        $data = get_object_vars($this);
-        
-        // Remove propriedades internas do framework
-        unset($data['db'], $data['table'], $data['primaryKey'], $data['fillable'], $data['hidden'], $data['timestamps'], $data['softDeletes'], $data['loadedRelations'], $data['relationDefinitionMode']);
+        // Cast captura tanto propriedades declaradas quanto dinâmicas (setadas pelo PDO FETCH_CLASS).
+        // Propriedades private/protected ficam com chaves mangled pelo PHP, por isso filtramos.
+        $raw = (array) $this;
+
+        $data = [];
+        foreach ($raw as $key => $value) {
+            // Descarta chaves mangled de private/protected (ex: "\0ClassName\0prop")
+            $cleanKey = ltrim($key, "\0");
+            $cleanKey = preg_replace('/^[^\0]+\0/', '', $cleanKey) ?: $cleanKey;
+
+            // Remove propriedades internas do framework
+            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode'], true)) {
+                continue;
+            }
+
+            $data[$cleanKey] = $value;
+        }
 
         // Adiciona as relações carregadas
         foreach ($this->loadedRelations as $key => $value) {

@@ -50,9 +50,13 @@ class QueryBuilder
         return $this->join($table, $condition, 'LEFT');
     }
 
-    public function with(string|array $relations): self
+    public function with(string|array $relations, string ...$extra): self
     {
-        $this->with = is_array($relations) ? $relations : func_get_args();
+        if (is_array($relations)) {
+            $this->with = $relations;
+        } else {
+            $this->with = [$relations, ...$extra];
+        }
         return $this;
     }
 
@@ -342,6 +346,13 @@ class QueryBuilder
      */
     public function delete(): bool
     {
+        if (empty($this->wheres) && empty($this->orWheres)) {
+            throw new \LogicException(
+                "Operação bloqueada: delete() chamado sem nenhuma cláusula WHERE na tabela '{$this->table}'. "
+                . 'Adicione ao menos um where() para continuar.'
+            );
+        }
+
         $sql = "DELETE FROM {$this->table}";
         $sql .= $this->buildWhere();
 
