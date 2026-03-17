@@ -45,7 +45,7 @@ class Container
     /**
      * Registra um bind no container (A interface aponta para a implementação concreta)
      */
-    public function bind(string $abstract, callable|string $concrete = null, bool $shared = false): void
+    public function bind(string $abstract, callable|string|null $concrete = null, bool $shared = false): void
     {
         if ($concrete === null) {
             $concrete = $abstract;
@@ -57,7 +57,7 @@ class Container
     /**
      * Registra um singleton (instância única)
      */
-    public function singleton(string $abstract, callable|string $concrete = null): void
+    public function singleton(string $abstract, callable|string|null $concrete = null): void
     {
         $this->bind($abstract, $concrete, true);
     }
