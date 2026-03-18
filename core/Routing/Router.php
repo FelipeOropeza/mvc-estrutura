@@ -337,6 +337,6 @@ class Router
         }
 
         // 404 handling simples
-        return new \Core\Http\Response("404 - Rota não encontrada: $uri", 404);
+        return new \Core\Http\Response("404 - Rota não encontrada.", 404);
     }
 }

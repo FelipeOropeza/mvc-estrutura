@@ -14,6 +14,7 @@ return [
         \Core\Http\Middleware\SecurityHeaders::class,
         \Core\Http\Middleware\HandleCors::class,
         \Core\Http\Middleware\StartSession::class,
+        \Core\Http\Middleware\VerifyCsrfToken::class,
     ],
 
     /*
@@ -28,7 +29,7 @@ return [
      */
     'groups' => [
         'web' => [
-            \Core\Http\Middleware\VerifyCsrfToken::class,
+            // \Core\Http\Middleware\VerifyCsrfToken::class, (Movido para global)
         ],
         'api' => [
             // \App\Middleware\ThrottleRequests::class,

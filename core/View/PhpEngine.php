@@ -142,17 +142,19 @@ class PhpEngine implements EngineInterface
     /**
      * 2. Inclui outro arquivo inteiro (Componente / Parcial / Navbar / Footer)
      */
-    public function include(string $view, array $data = []): void
+    public function include(string $view, array $data = []): string
     {
         $fullPath = $this->resolvePath($view);
         if (file_exists($fullPath)) {
             // Um partial tem capacidade de herdar os compartilhamentos Globais e variaveis locais!
             $data = array_merge(self::$shared, $data);
             extract($data);
+            ob_start();
             require $fullPath;
-        } else {
-            echo "<!-- Partial '{$view}' não encontrado -->";
-        }
+            return (string) ob_get_clean();
+        } 
+        
+        return "<!-- Partial '{$view}' não encontrado -->";
     }
 
     /**

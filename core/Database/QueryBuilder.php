@@ -69,6 +69,8 @@ class QueryBuilder
     public function whereIn(string $column, array|\Closure $values): self
     {
         if ($values instanceof \Closure) {
+            // NOTA: A subquery herda a tabela e a classe da query principal por padrão. 
+            // Se precisar buscar em outra tabela, use $subQuery->from('outra_tabela').
             $subQuery = new self($this->db, $this->table, $this->class);
             $values($subQuery);
             
@@ -389,13 +391,6 @@ class QueryBuilder
         return $results[0] ?? null;
     }
 
-    /**
-     * Busca um registro pelo ID.
-     */
-    public function find(mixed $id): ?object
-    {
-        return $this->where('id', '=', $id)->first();
-    }
 
     protected function eagerLoadRelations(array $models): array
     {

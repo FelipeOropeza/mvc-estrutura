@@ -30,6 +30,9 @@ class SecurityHeaders
         // Política de Referência
         $response->setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
 
+        // Content Security Policy básica: permite scripts/estilos locais, evita execução externa via CDNs não controlados
+        $response->setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;");
+
         return $response;
     }
 }

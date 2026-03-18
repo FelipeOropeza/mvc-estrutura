@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Core\Validation;
 
+use Core\Exceptions\HttpException;
 use Core\Exceptions\ValidationException;
 
 abstract class DataTransferObject
@@ -30,7 +31,7 @@ abstract class DataTransferObject
     {
         // 1. Hook de Autorização (Gatekeeping). Se falso, encerra o ciclo instantaneamente com 403.
         if (!$this->authorize()) {
-            throw new \Exception("Acesso negado ou não autorizado para essa requisição.", 403);
+            throw new HttpException("Acesso negado ou não autorizado para essa requisição.", 403);
         }
 
         // Se a pessoa não enviou o array pra preencher o DTO, pegamos da Request global
