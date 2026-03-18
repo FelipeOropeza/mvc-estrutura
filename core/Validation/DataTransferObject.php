@@ -72,6 +72,13 @@ abstract class DataTransferObject
                     }
                 }
 
+                // Se o valor for null e a propriedade não aceitar null, ignoramos a atribuição
+                // Isso permite que propriedades com valores padrão (ex: public string $s = 'default')
+                // mantenham seu valor caso o campo não seja enviado no request.
+                if ($value === null && $type instanceof \ReflectionNamedType && !$type->allowsNull()) {
+                    continue;
+                }
+
                 // Usamos ReflectionProperty::setValue para suportar Asymmetric Visibility (PHP 8.4+)
                 // Isso permite que o DTO tenha propriedades public private(set)
                 $reflection->setValue($this, $value);

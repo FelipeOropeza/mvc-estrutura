@@ -39,6 +39,12 @@ class QueryBuilder
         return $this;
     }
 
+    public function from(string $table): self
+    {
+        $this->table = $table;
+        return $this;
+    }
+
     public function join(string $table, string $condition, string $type = 'INNER'): self
     {
         $this->joins[] = "$type JOIN $table ON $condition";
@@ -60,8 +66,21 @@ class QueryBuilder
         return $this;
     }
 
-    public function whereIn(string $column, array $values): self
+    public function whereIn(string $column, array|\Closure $values): self
     {
+        if ($values instanceof \Closure) {
+            $subQuery = new self($this->db, $this->table, $this->class);
+            $values($subQuery);
+            
+            // Aqui buscamos a parte do SELECT do sub-objeto para montar a query aninhada
+            $sql = "SELECT {$subQuery->selects} FROM {$subQuery->table}";
+            $sql .= $subQuery->buildWhere();
+            
+            $this->wheres[] = "$column IN ($sql)";
+            $this->params = array_merge($this->params, $subQuery->params);
+            return $this;
+        }
+
         if (empty($values)) {
             $this->wheres[] = "1 = 0";
             return $this;
@@ -370,12 +389,25 @@ class QueryBuilder
         return $results[0] ?? null;
     }
 
+    /**
+     * Busca um registro pelo ID.
+     */
+    public function find(mixed $id): ?object
+    {
+        return $this->where('id', '=', $id)->first();
+    }
+
     protected function eagerLoadRelations(array $models): array
     {
+        if (empty($models)) return $models;
+        
         $first = $models[0];
 
-        foreach ($this->with as $relationMethod) {
-            if (!method_exists($first, $relationMethod)) {
+        foreach ($this->with as $key => $value) {
+            $relationMethod = is_string($key) ? $key : (is_string($value) ? $value : null);
+            $closure = is_string($key) ? $value : null;
+
+            if (!$relationMethod || !method_exists($first, $relationMethod)) {
                 continue;
             }
 
@@ -395,16 +427,23 @@ class QueryBuilder
 
                 if (empty($ids)) continue;
 
-                $relatedModels = (new $def->relatedClass())->whereIn($def->localKey, $ids)->get();
+                $query = (new $def->relatedClass())->whereIn($def->localKey, $ids);
+                if ($closure instanceof \Closure) {
+                    $closure($query);
+                }
+                $relatedModels = $query->get();
 
                 $dictionary = [];
                 foreach ($relatedModels as $r) {
-                    $dictionary[$r->{$def->localKey}] = $r;
+                    $keyVal = $r->{$def->localKey};
+                    if ($keyVal !== null) {
+                        $dictionary[$keyVal] = $r;
+                    }
                 }
 
                 foreach ($models as $m) {
                     $val = $m->{$def->foreignKey};
-                    $m->setRelation($relationMethod, $dictionary[$val] ?? null);
+                    $m->setRelation($relationMethod, $val !== null ? ($dictionary[$val] ?? null) : null);
                 }
             } elseif ($def->type === 'hasMany') {
                 $ids = [];
@@ -417,7 +456,11 @@ class QueryBuilder
 
                 if (empty($ids)) continue;
 
-                $relatedModels = (new $def->relatedClass())->whereIn($def->foreignKey, $ids)->get();
+                $query = (new $def->relatedClass())->whereIn($def->foreignKey, $ids);
+                if ($closure instanceof \Closure) {
+                    $closure($query);
+                }
+                $relatedModels = $query->get();
 
                 $dictionary = [];
                 foreach ($relatedModels as $r) {
@@ -439,7 +482,11 @@ class QueryBuilder
 
                 if (empty($ids)) continue;
 
-                $relatedModels = (new $def->relatedClass())->whereIn($def->foreignKey, $ids)->get();
+                $query = (new $def->relatedClass())->whereIn($def->foreignKey, $ids);
+                if ($closure instanceof \Closure) {
+                    $closure($query);
+                }
+                $relatedModels = $query->get();
 
                 $dictionary = [];
                 foreach ($relatedModels as $r) {

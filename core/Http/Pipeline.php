@@ -78,17 +78,24 @@ class Pipeline
     {
         return function ($stack, $pipe) {
             return function ($passable) use ($stack, $pipe) {
-                // Instancia o middleware via Container para permitir Injeção de Dependências no construct!
+                // Suporte a Middleware com parãmetros via string (Ex: 'role:admin,editor')
+                $params = [];
+                if (is_string($pipe) && str_contains($pipe, ':')) {
+                    [$pipe, $paramString] = explode(':', $pipe, 2);
+                    $params = explode(',', $paramString);
+                }
+
+                // Instancia o middleware via Container
                 if (is_string($pipe) && class_exists($pipe)) {
                     $pipe = \Core\Support\Container::getInstance()->get($pipe);
                 }
 
-                // Verifica se implementa nosso MiddlewareInterface ou possui o método handle
+                // Verifica se possui o método handle
                 if (method_exists($pipe, 'handle')) {
-                    return $pipe->handle($passable, $stack);
+                    // Passa Request, Next (stack) e os parâmetros extras desempacotados
+                    return $pipe->handle($passable, $stack, ...$params);
                 }
 
-                // Se o middleware for inválido, apenas continua pro próximo
                 return $stack($passable);
             };
         };

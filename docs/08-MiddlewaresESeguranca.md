@@ -25,6 +25,26 @@ class AuthMiddleware
 }
 ```
 
+### Recebendo Parâmetros em Middlewares
+
+Você pode passar parâmetros extras para o seu middleware na definição da rota usando a sintaxe `:param1,param2`. Eles serão injetados logo após o closure `$next`:
+
+```php
+// Na definição da Rota:
+Route::get('/admin', [AdminController::class, 'index'])->middleware('auth:admin,editor');
+
+// No Middleware:
+public function handle(Request $request, Closure $next, string ...$roles)
+{
+    // $roles será ['admin', 'editor']
+    if (!in_array(session()->get('cargo'), $roles)) {
+        return Response::json(['error' => 'Acesso negado'], 403);
+    }
+
+    return $next($request);
+}
+```
+
 ## Configuração de Middlewares (Apelidos e Grupos)
 No arquivo `config/middleware.php`, nós gerimos como o sistema injeta ou agrupa filtros ao redor de rotas.
 * **globais:** Rodam em todas as rotas. Atualmente incluem:

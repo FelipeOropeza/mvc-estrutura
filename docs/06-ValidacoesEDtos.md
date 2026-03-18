@@ -22,7 +22,12 @@ class RegistroDTO extends DataTransferObject
     // Required garante que não seja vazio e aceita customizar o texto 
     #[Required('Digite um E-mail')]
     #[Email('Esse não parece ser um E-mail válido.')]
-    public ?string $email = null;
+    public string $email;
+
+    // Suporte a Asymmetric Visibility (PHP 8.4+)
+    // O DTO permite leitura pública, mas escrita apenas interna (via constructor/validator)
+    #[Required]
+    public private(set) string $usuario;
 
     // Número Mínimo/Máximo de Caracteres, Valor Numérico ou Elementos de um Array
     #[Required]
@@ -50,6 +55,8 @@ class RegistroDTO extends DataTransferObject
     }
 }
 ```
+
+> **Modernidade:** O framework suporta **Asymmetric Visibility** (PHP 8.4+). Você pode declarar propriedades como `public private(set)`, garantindo que os dados do DTO sejam imutáveis fora do contexto de validação inicial.
 
 ## Mutators (Transformações Automáticas)
 

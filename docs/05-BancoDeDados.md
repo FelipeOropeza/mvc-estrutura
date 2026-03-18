@@ -129,9 +129,9 @@ $produtos = (new Produto())
 | Método | Descrição |
 |---|---|
 | `select(string $cols)` | Define as colunas a retornar |
-| `where($col, $op?, $val)` | Adiciona condição AND |
-| `orWhere($col, $op?, $val)` | Adiciona condição OR |
-| `whereIn(string $col, array $vals)` | `col IN (...)` — AND |
+| `where($col, $op?, $val)` | Adiciona condição AND (aceita Closure para agrupamento) |
+| `orWhere($col, $op?, $val)` | Adiciona condição OR (aceita Closure para agrupamento) |
+| `whereIn(string $col, array\|$Closure $vals)` | `col IN (...)` — AND (aceita array ou Closure para Subquery) |
 | `orWhereIn(string $col, array $vals)` | `col IN (...)` — OR |
 | `whereNull(string $col)` | `col IS NULL` |
 | `whereNotNull(string $col)` | `col IS NOT NULL` |
@@ -142,7 +142,7 @@ $produtos = (new Produto())
 | `orderBy(string $col, $dir)` | ORDER BY (padrão ASC) |
 | `limit(int $n)` | LIMIT |
 | `offset(int $n)` | OFFSET |
-| `with($relations...)` | Eager Loading de relações |
+| `with($rels)` | Eager Loading (aceita array associativo com Closure para filtros) |
 | `withTrashed()` | Inclui soft-deletados |
 | `onlyTrashed()` | Somente soft-deletados |
 | `get()` | Executa e retorna `array` |
@@ -179,6 +179,25 @@ $produtos = (new Produto())
 ```
 
 A Closure recebe um `QueryBuilder` isolado. Os parâmetros são mergeados de forma segura, sem colisão de nomes.
+
+---
+
+## Subqueries com whereIn
+
+O método `whereIn` aceita uma `Closure` que permite construir uma subquery SQL de forma fluente:
+
+```php
+// SELECT * FROM produtos WHERE categoria_id IN (SELECT id FROM categorias WHERE ativo = 1)
+$produtos = (new Produto())
+    ->whereIn('categoria_id', function($query) {
+        $query->select('id')
+              ->from('categorias')
+              ->where('ativo', '1');
+    })
+    ->get();
+```
+
+> **Nota:** A subquery é instanciada isoladamente. Se a tabela da subquery usar Soft Deletes, os filtros (como `deleted_at IS NULL`) devem ser aplicados manualmente dentro da Closure se desejado, pois ela inicia um contexto limpo.
 
 ---
 
@@ -456,6 +475,26 @@ $usuarios = (new Usuario())->with(['endereco', 'pedidos'])->get();
 ```
 
 > O Eager Loading funciona para `belongsTo`, `hasMany` e `hasOne`. Relações não encontradas retornam `null` (hasOne/belongsTo) ou `[]` (hasMany).
+
+### Eager Loading com Filtros (Constrained Eager Loading)
+
+Você pode filtrar ou ordenar os registros relacionados passando um array associativo para o `with()`:
+
+```php
+// Carrega os usuários e, para cada um, apenas os pedidos 'pagos', ordenados pelo ID
+$usuarios = (new Usuario())->with([
+    'pedidos' => function($query) {
+        $query->where('status', 'pago')
+              ->orderBy('id', 'DESC');
+    }
+])->get();
+
+// Você pode misturar relações simples e relações filtradas
+$usuarios = (new Usuario())->with([
+    'endereco', // Carregamento simples
+    'pedidos' => fn($q) => $q->where('total', '>', 100) // Filtrado
+])->get();
+```
 
 ---
 

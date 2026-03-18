@@ -64,6 +64,14 @@ class Request
     }
 
     /**
+     * Alias para o método get().
+     */
+    public function input(string $key, mixed $default = null): mixed
+    {
+        return $this->get($key, $default);
+    }
+
+    /**
      * Retorna todos os dados enviados por formulário ou JSON.
      */
     public function all(): array

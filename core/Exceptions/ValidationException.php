@@ -18,4 +18,9 @@ class ValidationException extends Exception
         $this->errors = $errors;
         $this->oldInput = $oldInput;
     }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
 }
