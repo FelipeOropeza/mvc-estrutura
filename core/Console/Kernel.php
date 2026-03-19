@@ -53,9 +53,7 @@ class Kernel
             case 'make:mutator':
                 $this->makeMutator($args);
                 break;
-            case 'setup:engine':
-                $this->setupEngine($args);
-                break;
+
             case 'setup:auth':
                 $this->setupAuth($args);
                 break;
@@ -161,7 +159,7 @@ class Kernel
         echo "  db:seed [Nome]           Popula o banco com seeders\n\n";
 
         echo "🛠️ Instalação & Setup:\n";
-        echo "  setup:engine <php|twig>  Altera o motor de visualização padrão\n";
+
         echo "  setup:auth               Gera sistema de Autenticação Web (Session)\n";
         echo "  setup:api                Gera sistema de Autenticação API (JWT)\n";
         echo "  setup:aviso              Gera sistema de Avisos em Tempo Real (Redis/Mercure)\n\n";
@@ -472,14 +470,10 @@ class Kernel
 
         $name = $args[1];
 
-        // Pega do seu config/app.php o motor base atual ('php' ou 'twig')
-        $engine = $this->config['app']['view_engine'] ?? 'php';
-        $extension = $engine === 'twig' ? '.twig' : '.php';
+        $extension = '.php';
 
         // Anexa a extensão baseada no motor dinamicamente ao nome se não tem
         if (!str_ends_with($name, $extension) && !str_ends_with($name, '.html')) {
-            // Remove se a pessoa digitou a outra sem querer
-            $name = str_replace(['.php', '.twig'], '', $name);
             $name .= $extension;
         }
 
@@ -555,34 +549,7 @@ class Kernel
         $this->createFile($path, $content, "Mutator '$name'");
     }
 
-    private function setupEngine(array $args): void
-    {
-        if (!isset($args[1]) || !in_array($args[1], ['php', 'twig'])) {
-            echo "Erro: Forneça o motor. Ex: setup:engine twig\n";
-            exit(1);
-        }
 
-        $engine = $args[1];
-        $configFile = realpath(__DIR__ . '/../../config/app.php');
-        $content = file_get_contents($configFile);
-
-        // Troca valor da chave no config/app.php
-        $content = preg_replace("/'view_engine'\s*=>\s*'[^']+'/", "'view_engine' => '$engine'", $content);
-        file_put_contents($configFile, $content);
-
-        // Limpa a tela exemplo incompatível
-        $viewsPath = rtrim($this->config['paths']['views'], '/');
-        if ($engine === 'twig') {
-            if (file_exists("$viewsPath/home.php"))
-                unlink("$viewsPath/home.php");
-            echo "✅ Motor da View comutado para TWIG.\n";
-            echo "   (Execute 'composer require twig/twig' no terminal se ainda não instalou!).\n";
-        } else {
-            if (file_exists("$viewsPath/home.twig"))
-                unlink("$viewsPath/home.twig");
-            echo "✅ Motor da View comutado para nativo PHP.\n";
-        }
-    }
 
     private function optimizeApp(array $args): void
     {
@@ -618,7 +585,7 @@ class Kernel
         file_put_contents($cacheFile, $compiledCode);
 
         echo "✅ Compilação de rotas concluída com sucesso em .cache/routes.php\n";
-        echo "✅ Dependências resolvidas \033[32msem Reflection\033[0m.\n";
+        echo "✅ Rotas compiladas delegando injeção para o Container de Runtime.\n";
     }
 
     private function clearOptimization(array $args): void
@@ -722,8 +689,7 @@ class Kernel
         $authViewDir = $viewDir . '/auth';
         if (!is_dir($authViewDir)) mkdir($authViewDir, 0777, true);
 
-        $engine = $this->config['app']['view_engine'] ?? 'php';
-        $ext = $engine === 'twig' ? '.twig' : '.php';
+        $ext = '.php';
 
         $loginViewPath = $authViewDir . '/login' . $ext;
         if (!file_exists($loginViewPath)) {

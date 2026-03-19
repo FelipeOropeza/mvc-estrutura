@@ -1,6 +1,6 @@
-# MVC Base Project (Micro Framework)
+# MVC Base Project (Framework Full-Stack)
 
-Um esqueleto PHP puro, ultra-leve e focado em performance (Stateless). Construído do zero para suportar a Arquitetura Moderna do PHP: Container de Injeção de Dependências (PSR-11 feeling), Cycle de Request/Response via Middlewares (PSR-15 feeling), Service Providers e preparado para servidores assíncronos como o FrankenPHP.
+Um esqueleto PHP puro, robusto e focado em performance (Stateless). Construído do zero para suportar a Arquitetura Moderna do PHP: Container de Injeção de Dependências (PSR-11 feeling), Cycle de Request/Response via Middlewares (PSR-15 feeling), Service Providers e preparado para servidores assíncronos como o FrankenPHP.
 
 ## Principais Features Atuais
 
@@ -82,7 +82,6 @@ php forge make:middleware VerificarAcessoMiddleware
 php forge make:rule CpfValido
 php forge make:mutator LimpaCpf
 php forge migrate
-php forge setup:engine twig
 php forge setup:auth
 php forge setup:api
 php forge setup:aviso

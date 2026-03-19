@@ -27,7 +27,7 @@ php forge make:mutator NomeDaSuaMutaçãoLimpeza # Pasta /Mutators
 php forge setup:auth               # Instala um sistema MVC de Autenticação base (Login, Registro, DB e Rotas)
 php forge setup:api                # Instala um sistema de API via JWT (Tokens)
 php forge setup:aviso              # Instala o sistema de Avisos em Tempo Real (Mercure/Redis)
-php forge setup:engine twig        # Migra o projeto entre Php/Twig como View padrão do Front   
+
 php forge optimize                 # Compila Rotas e Arquivos no Cache acelerando em até 10x
 php forge optimize:clear           # Limpa a compilação do Cache e do Optimize 
 

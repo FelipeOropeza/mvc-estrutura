@@ -42,10 +42,10 @@ O comando `setup:aviso` criou toda a estrutura necessária para um sistema reati
 1.  **Migration**: Cria a tabela `avisos` (`texto`, `timestamps`).
 2.  **Model**: `app/Models/Notice.php`.
 3.  **Controller**: `app/Controllers/NoticeController.php` (com as rotas `/avisos` e `/avisos/lista`).
-4.  **Views**: Localizadas em `app/Views/avisos/`:
+4.  **Views**: Localizadas em `resources/views/avisos/`:
     *   `index.php`: Página principal com o formulário HTMX.
     *   `partials/tabela.php`: A lista de avisos (renderizada de forma isolada).
-    *   **Componente**: `app/Views/avisos/componentes/AvisosLista.php` (o coração do tempo real).
+    *   **Componente**: `resources/views/avisos/componentes/AvisosLista.php` (o coração do tempo real).
 
 ---
 

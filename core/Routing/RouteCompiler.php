@@ -65,45 +65,7 @@ class RouteCompiler
 
     private function buildInstantiationCode(string $class): string
     {
-        if (!class_exists($class)) {
-            // Se não existe ou é interface abstrata ligada a Container Runtime fallback
-            return "\\Core\\Support\\Container::getInstance()->get('\\$class')";
-        }
-
-        $reflector = new ReflectionClass($class);
-
-        if (!$reflector->isInstantiable()) {
-            return "\\Core\\Support\\Container::getInstance()->get('\\$class')";
-        }
-
-        $constructor = $reflector->getConstructor();
-
-        if ($constructor === null) {
-            return "new \\$class()";
-        }
-
-        $dependencies = $constructor->getParameters();
-        $args = [];
-
-        foreach ($dependencies as $dependency) {
-            $type = $dependency->getType();
-
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                $dependencyClass = $type->getName();
-                $args[] = $this->buildInstantiationCode($dependencyClass);
-            } elseif ($dependency->isDefaultValueAvailable()) {
-                $args[] = var_export($dependency->getDefaultValue(), true);
-            } else {
-                $args[] = 'null';
-            }
-        }
-
-        $argsString = implode(",\n                        ", $args);
-
-        if ($argsString) {
-            return "new \\$class(\n                        $argsString\n                    )";
-        }
-
-        return "new \\$class()";
+        // Delega para o Container em Runtime sempre, evitando problemas com app() e bindings dinâmicos
+        return "\\Core\\Support\\Container::getInstance()->get('\\$class')";
     }
 }

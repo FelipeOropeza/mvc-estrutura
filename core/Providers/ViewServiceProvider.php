@@ -7,7 +7,6 @@ namespace Core\Providers;
 use Core\Support\ServiceProvider;
 use Core\View\EngineInterface;
 use Core\View\PhpEngine;
-use Core\View\TwigEngine;
 
 class ViewServiceProvider extends ServiceProvider
 {
@@ -20,11 +19,6 @@ class ViewServiceProvider extends ServiceProvider
         $this->app->singleton(EngineInterface::class, function ($app) {
             $config = require $app->get('path.base') . '/config/app.php';
             $viewPath = $config['paths']['views'];
-            $engineType = $config['app']['view_engine'] ?? 'php';
-
-            if ($engineType === 'twig') {
-                return new TwigEngine($viewPath);
-            }
 
             return new PhpEngine($viewPath);
         });

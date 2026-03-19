@@ -12,22 +12,6 @@ class Setup
         echo "   \033[1;37m✨  BEM-VINDO AO FORGE MVC BASE INITIALIZER  ✨\033[0m\n";
         echo "\033[1;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n\n";
 
-        $engineChoice = self::askConfig(
-            "Qual motor de templates você deseja utilizar no projeto?",
-        [
-            '1' => 'PHP Nativo (Mais rápido e sem dependências extras)',
-            '2' => 'Twig Engine (Sintaxe frontend enxuta, estilo Blade/Vue)'
-        ],
-            '1'
-        );
-
-        if ($engineChoice === '2') {
-            self::setupEngineChoice('twig');
-        }
-        else {
-            self::setupEngineChoice('php');
-        }
-
         // Agora o DB é obrigatório via .env, então criamos o arquivo siliciosamente
         self::installDotenv();
 
@@ -38,63 +22,10 @@ class Setup
         echo "\033[1;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n\n";
     }
 
-    private static function askConfig(string $question, array $options, string $defaultKey): string
-    {
-        echo "\033[32m?\033[0m \033[1m{$question}\033[0m\n";
-        foreach ($options as $key => $desc) {
-            $isDefault = ($key === $defaultKey) ? " \033[33m(padrão)\033[0m" : "";
-            echo "  \033[36m[{$key}]\033[0m {$desc}{$isDefault}\n";
-        }
-
-        echo "\n  \033[1;32m❯\033[0m ";
-        $fp = fopen('php://stdin', 'r');
-        $choice = trim(stream_get_line($fp, 1024, PHP_EOL));
-
-        if ($choice === '') {
-            $choice = $defaultKey;
-        }
-
-        echo "\n";
-        return $choice;
-    }
-
     private static function clearScreen(): void
     {
         // Limpa a tela inteira do terminal formatando visualmente limpo
         echo "\033[2J\033[;H";
-    }
-
-    private static function setupEngineChoice(string $engine): void
-    {
-        $configFile = __DIR__ . '/../config/app.php';
-        $viewsPath = rtrim(__DIR__ . '/../app/Views', '/');
-
-        if ($engine === 'twig') {
-            echo "\n⚙️  Instalando e configurando o Twig...\n";
-            // Instala a biblioteca
-            passthru('composer require twig/twig');
-
-            // Altera o config
-            if (file_exists($configFile)) {
-                $content = file_get_contents($configFile);
-                $content = preg_replace("/'view_engine'\s*=>\s*'[^']+'/", "'view_engine' => 'twig'", $content);
-                file_put_contents($configFile, $content);
-            }
-
-            // Exclui a view PHP para usar a home.twig pronta e bonitona
-            if (file_exists("$viewsPath/home.php")) {
-                unlink("$viewsPath/home.php");
-            }
-            echo "✅ Twig ativado como motor oficial de templates!\n";
-        }
-        else {
-            echo "\n⚙️  Ativando PHP nativo como motor de templates.\n";
-            // Exclui a view twig para manter o repositório limpo a favor do home.php
-            if (file_exists("$viewsPath/home.twig")) {
-                unlink("$viewsPath/home.twig");
-            }
-            echo "✅ Motor nativo ativado com sucesso!\n";
-        }
     }
 
     private static function installDotenv(): void

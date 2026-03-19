@@ -1,22 +1,18 @@
 # Estrutura de Diretórios
 
-O framework segue uma separação lógica e profissional de pastas:
+O framework adota o conceito de "Progressive Disclosure". Pastas de arquitetura avançadas (como `DTOs`, `Rules`, `Jobs`) só são criadas quando você solicita via linha de comando (`php forge`).
 
-- **`app/`**: Onde você vai passar 90% do seu tempo.
+- **`app/`**: Onde fica a lógica do seu sistema (Namespace `App\`).
   - **`Controllers/`**: Orquestram as requisições e a lógica de apresentação.
-  - **`DTOs/`**: "Gatekeepers" que validam, tipam e autorizam os dados antes de chegarem aos controladores.
-  - **`Services/`**: Regras de negócio pesadas (Cálculos de frete, Integrações de Pagamento e processamentos complexos).
   - **`Models/`**: Representam as tabelas do Banco, comportam o Query Builder e relacionamentos.
   - **`Middleware/`**: "Filtros" (Ex: Bloquear usuários deslogados).
-  - **`Views/`**: O visual do seu site (HTML/PHP ou Twig).
-  - **`Mutators/`** e **`Rules/`**: Suas Inteligências Mágicas criadas para manipular e validar campos.
-  - **`Providers/`**: Seus registradores de serviços de inicialização.
-  - **`Jobs/`**: Classes de tarefas em segundo plano (Filas).
-  - **`Console/Commands/`**: Seus comandos de CLI customizados.
-- **`bootstrap/`**: Responsável pelo script de inicialização do cache mágico e motor do framework.
-- **`config/`**: Configurações de super variáveis (`app.php`, `database.php` e `middleware.php` para aliases dos seus filtros).
-- **`core/`**: O motor do framework (Não mexa aqui dentro a não ser que vá contribuir com a arquitetura núcleo da engine).
+  - *Pastas como `DTOs/`, `Mutators/`, `Providers/`, `Jobs/`, `Services/` serão criadas dinamicamente à medida que você for implementando funcionalidades avançadas via `php forge`.*
+- **`resources/`**: Arquivos que não são classes de negócio.
+  - **`views/`**: O visual do seu site em HTML, PHP ou Twig.
+- **`bootstrap/`**: Scripts de inicialização do motor do framework.
+- **`config/`**: Configurações de super variáveis (`app.php`, `database.php` etc).
+- **`core/`**: O motor do framework (Não mexa aqui dentro, é seu código de base).
 - **`database/`**: Configurações de Banco, **`migrations/`** e **`seeders/`**.
 - **`public/`**: A única pasta com acesso via Web (Contém o seu Arquivo `index.php` e os seus CSS/JS/Imagens).
-- **`routes/`**: Define as URLs e Grupos de URLs disponíveis no seu App (`web.php`).
-- **`storage/`**: Onde ficam arquivos temporários, logs (`logs/app.log`) e uploads (se usar disco local).
+- **`routes/`**: Define URL Paths. *Obs: Recomendamos fortemente definir as rotas diretamente nos seus Controllers via Atributos PHP 8 (`#[Get('/rota')]`), deixando a pasta `routes/` mais enxuta!*
+- **`storage/`**: Arquivos temporários, logs (`logs/app.log`) e uploads (se usar disco local).

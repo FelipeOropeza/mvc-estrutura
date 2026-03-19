@@ -1,8 +1,8 @@
 # Views e Interface de Usuário (UI)
 
-Temos a view engatilhada a retornar PHP ou TWIG baseado no motor setado em `config/app.php`. 
+Temos a view engatilhada a retornar PHP nativo inspirado no *Blade*.
 
-Para renderizar (o core procura dentro de `app/Views/`):
+Para renderizar (o core procura dentro de `resources/views/`):
 ```php
 return view('produto/detalhes', [
     'nome' => 'Sabão em pó',
@@ -14,7 +14,7 @@ return view('produto/detalhes', [
 A separação de Layouts evita que você repita `<head>` e Menus em todas as páginas. É totalmente suportado dependendo do "motor" ativo:
 
 **Com Engine de PHP Puro (Padrão):** O framework possui um motor inteligente inspirado no *Blade* do Laravel.
-No seu arquivo Mestre (`app/Views/layouts/app.php`):
+No seu arquivo Mestre (`resources/views/layouts/app.php`):
 ```php
 <!DOCTYPE html>
 <html>
@@ -28,7 +28,7 @@ No seu arquivo Mestre (`app/Views/layouts/app.php`):
 </html>
 ```
 
-Na sua view Filha (`app/Views/home.php`):
+Na sua view Filha (`resources/views/home.php`):
 ```php
 <?php $this->layout('layouts/app', ['titulo' => 'Página Inicial']) ?>
 
@@ -38,14 +38,6 @@ Na sua view Filha (`app/Views/home.php`):
     <!-- Chamando um componente/partial isolado -->
     <?php $this->include('partials/botao_voltar', ['cor' => 'blue']) ?>
 <?php $this->endSection() ?>
-```
-
-**Com Engine Twig:** A herança é nativa e segue o mesmo padrão poderoso:
-```twig
-{% extends "layouts/app.twig" %}
-{% block content %}
-    <h1>Listagem de Produtos</h1>
-{% endblock %}
 ```
 
 ## Variáveis Compartilhadas (Globais)
