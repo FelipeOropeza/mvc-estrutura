@@ -43,6 +43,17 @@ class Router
         return $this;
     }
 
+    public function getNamedRoutes(): array
+    {
+        return $this->namedRoutes;
+    }
+
+    public function setNamedRoutes(array $namedRoutes): self
+    {
+        $this->namedRoutes = $namedRoutes;
+        return $this;
+    }
+
     public function get(string $uri, array|Closure|callable $action): self
     {
         return $this->register('GET', $uri, $action);

@@ -13,10 +13,12 @@ class RouteCompiler
     public function compile(Router $router): string
     {
         $routes = $router->getRoutes();
+        $namedRoutes = $router->getNamedRoutes();
         $code = "<?php\n\n// Arquivo gerado automaticamente pelo `php forge optimize`.\n// Nao edite manualmente!\n\nreturn [\n";
+        $code .= "    'routes' => [\n";
 
         foreach ($routes as $method => $patterns) {
-            $code .= "    '$method' => [\n";
+            $code .= "        '$method' => [\n";
             foreach ($patterns as $pattern => $info) {
                 // Escape aspas simples no pattern para não quebrar a construção do array PHP
                 $safePattern = str_replace("'", "\'", $pattern);
@@ -56,8 +58,17 @@ class RouteCompiler
 
                 $code .= "        ],\n";
             }
-            $code .= "    ],\n";
+            $code .= "        ],\n";
         }
+        $code .= "    ],\n";
+        
+        $code .= "    'namedRoutes' => [\n";
+        foreach ($namedRoutes as $name => $uri) {
+            $safeName = str_replace("'", "\'", $name);
+            $safeUri  = str_replace("'", "\'", $uri);
+            $code .= "        '$safeName' => '$safeUri',\n";
+        }
+        $code .= "    ],\n";
         $code .= "];\n";
 
         return $code;
