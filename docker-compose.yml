@@ -12,6 +12,8 @@ services:
       - "8000:8000"
     environment:
       - APP_ENV=local
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
       - MERCURE_PUBLISHER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
       - MERCURE_SUBSCRIBER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
       - MERCURE_URL=http://localhost:8000/.well-known/mercure
@@ -21,6 +23,21 @@ services:
       - ./Caddyfile:/etc/frankenphp/Caddyfile
     depends_on:
       - redis
+      - mysql
+    restart: unless-stopped
+
+  # Banco de Dados MySQL
+  mysql:
+    image: mysql:8
+    container_name: mvc_mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE:-mvc_base}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-secret}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - mysql_data:/var/lib/mysql
     restart: unless-stopped
 
   # Banco de Dados Redis para Cache e Filas
@@ -30,3 +47,6 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+
+volumes:
+  mysql_data:
