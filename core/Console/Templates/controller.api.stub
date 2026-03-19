@@ -1,0 +1,66 @@
+<?php
+
+namespace {{namespace}};
+
+use Core\Http\Controller;
+use Core\Http\Request;
+use Core\Http\Response;
+use Core\Attributes\Route\Get;
+use Core\Attributes\Route\Post;
+use Core\Attributes\Route\Put;
+use Core\Attributes\Route\Delete;
+
+class {{class}} extends Controller
+{
+    #[Get('/api/{{resource}}')]
+    public function index()
+    {
+        return Response::makeJson([
+            'status' => 'sucesso',
+            'data' => []
+        ]);
+    }
+
+    #[Get('/api/{{resource}}/{id}')]
+    public function show(Request $request, int $id)
+    {
+        return Response::makeJson([
+            'status' => 'sucesso',
+            'data' => ['id' => $id]
+        ]);
+    }
+
+    #[Post('/api/{{resource}}')]
+    public function store(Request $request)
+    {
+        $dados = $request->all();
+
+        return Response::makeJson([
+            'status' => 'sucesso',
+            'mensagem' => 'Criado com sucesso',
+            'data' => $dados
+        ], 201);
+    }
+
+    #[Put('/api/{{resource}}/{id}')]
+    public function update(Request $request, int $id)
+    {
+        $dados = $request->all();
+
+        return Response::makeJson([
+            'status' => 'sucesso',
+            'mensagem' => 'Atualizado com sucesso',
+            'data' => $dados
+        ]);
+    }
+
+    #[Delete('/api/{{resource}}/{id}')]
+    public function destroy(Request $request, int $id)
+    {
+        return Response::makeJson([
+            'status' => 'sucesso',
+            'mensagem' => 'Removido com sucesso'
+        ]);
+    }
+}
+

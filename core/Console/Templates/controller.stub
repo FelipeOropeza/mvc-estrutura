@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Controllers;
+namespace {{namespace}};
 
 use Core\Http\Controller;
 
-class {{name}} extends Controller
+class {{class}} extends Controller
 {
     public function index()
     {
-        // \$this->view('nome_da_view', ['dados' => 'exemplo']);
+        // $this->view('nome_da_view', ['dados' => 'exemplo']);
     }
 }

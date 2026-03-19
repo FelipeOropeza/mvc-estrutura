@@ -139,7 +139,7 @@ class Kernel
         echo "Uso: forge [comando] ou php forge [comando]\n\n";
 
         echo "🚀 Geradores (Scaffolding):\n";
-        echo "  make:controller <Nome>   Cria um novo Controller\n";
+        echo "  make:controller <Nome> [--api] Cria um novo Controller (use --api para API REST)\n";
         echo "  make:model <Nome>        Cria um novo Model\n";
         echo "  make:view <Nome>         Cria uma nova View automaticamente\n";
         echo "  make:component <Nome>    Cria um componente HTMX reativo\n";
@@ -404,18 +404,55 @@ class Kernel
 
     private function makeController(array $args): void
     {
-        if (!isset($args[1])) {
-            echo "Erro: Forneça o nome. Ex: make:controller UsuarioController\n";
+        if (!isset($args[1]) || str_starts_with($args[1], '-')) {
+            echo "Erro: Forneça o nome. Ex: make:controller UsuarioController [--api]\n";
             exit(1);
         }
 
-        $name = $args[1];
+        $isApi = in_array('--api', $args) || in_array('-a', $args);
+        
+        $name = null;
+        foreach ($args as $index => $arg) {
+            if ($index > 0 && !str_starts_with($arg, '-')) {
+                $name = $arg;
+                break;
+            }
+        }
+
         if (!str_ends_with($name, 'Controller')) {
             $name .= 'Controller';
         }
+        
+        // Normalize slashes
+        $name = str_replace('\\', '/', $name);
+
+        $dir = dirname($this->config['paths']['controllers'] . '/' . $name);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
 
         $path = $this->config['paths']['controllers'] . '/' . $name . '.php';
-        $content = $this->renderTemplate('controller', ['{{name}}' => $name]);
+        $template = $isApi ? 'controller.api' : 'controller';
+        
+        $namespace = 'App\\Controllers';
+        $className = $name;
+        
+        if (str_contains($name, '/')) {
+            $parts = explode('/', $name);
+            $className = array_pop($parts);
+            $namespace .= '\\' . implode('\\', $parts);
+        }
+
+        $resource = strtolower(str_replace('Controller', '', $className));
+        $resource = preg_replace('/(?<!^)[A-Z]/', '-$0', $resource); // Convert camelCase to kebab-case
+        $resource = strtolower($resource);
+
+        $content = $this->renderTemplate($template, [
+            '{{namespace}}' => $namespace,
+            '{{class}}' => $className,
+            '{{name}}' => $name, // Compatibilidade com base antiga
+            '{{resource}}' => $resource,
+        ]);
         $this->createFile($path, $content, "Controller '$name'");
     }
 

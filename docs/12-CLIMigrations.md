@@ -9,6 +9,7 @@ php forge
 
 # Geradores Rápidos - "Make":
 php forge make:controller UsuarioController  # Na Pasta /Controllers
+php forge make:controller Api/UsuarioController --api # Controller API JSON na subpasta Api/
 php forge make:model Fornecedor             # Na Pasta /Models com $table pronto
 php forge make:service EmailService         # Na Pasta /Services pra lógica de regra de negócio
 php forge make:middleware TravaIP           # Na Pasta /Middleware 

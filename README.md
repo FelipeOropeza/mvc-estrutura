@@ -74,6 +74,7 @@ Acesse `http://localhost:8000` no seu navegador.
 ### Comandos Rápidos da CLI (Forge):
 ```bash
 php forge make:controller NomeController
+php forge make:controller Api/UsuarioController --api
 php forge make:model TabelaModel
 php forge make:view secao/nova-view
 php forge make:component nome_componente

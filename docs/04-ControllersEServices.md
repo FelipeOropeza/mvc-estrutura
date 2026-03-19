@@ -3,6 +3,7 @@
 O Controller nunca deve dar um "echo". Ele sempre __retorna__ uma Resposta.
 
 **Devolvendo JSON (Para APIs) ou Redirecionando:**
+> **Dica:** Você pode gerar um Controller focado em API com todos os métodos CRUD preparados rodando `php forge make:controller Api/MeuController --api`
 ```php
 namespace App\Controllers;
 

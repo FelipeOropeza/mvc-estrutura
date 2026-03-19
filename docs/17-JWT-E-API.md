@@ -59,3 +59,68 @@ public function profile()
     return response()->json($user);
 }
 ```
+
+## 🏗️ Gerando Resources (API Controllers)
+
+Para focar no desenvolvimento veloz, o framework possui a flag `--api` para a criação de Controllers. Em vez de retornar Views HTML, ele gera um Controller focado nas 5 ações padrão RESTful utilizando métodos que devolvem JSON bruto:
+
+```bash
+php forge make:controller Api/ProdutosController --api
+```
+
+Isto gera os métodos `index`, `show`, `store`, `update` e `destroy` baseados nos **Atributos HTTP do PHP 8** (`#[Get]`, `#[Post]`, etc...), mapeando rotas diretamente pro prefixo `/api/` sem a necessidade de cadastrá-las no `routes/web.php` ou `routes/api.php`!
+
+## 🛡️ Auto-Validação JSON Exclusiva (DTOs)
+
+Construir APIs demanda segurança da entrada de dados (Payloads). Felizmente o mecanismo de validação do MVC Base é 100% capaz de se comportar de forma inteligente para APIs.
+
+### O comportamento de Resposta de Erro
+
+Nas aplicações tradicionais HTML de *Full-Stack*, quando a validação de um formulário recusa os dados, o framework cancela a rota via _exception_ e dispara um comportamento de Sessão (*Flash Session*) que realiza um redirect *HTTP 302* de volta pro formulário preenchendo as tags de aviso no HTML.
+
+**Contudo, quando a sua chamada é de uma API:**
+
+O Framework Core mapeia automaticamente se a chamada HTTP da requisição possui as seguintes configurações:
+1. `Accept: application/json` no Header da Request **OU**
+2. Se a rota iniciou pelo prefixo URI `/api/`
+
+Sendo verdadeiro qualuqer um destes testes, ao invés de buscar a Sessão, o Handler Global de Exceções captura o problema e ejeta uma resposta imediata **HTTP 422 Unprocessable Entity** via JSON para o front-end, parando a execução antes mesmo do Controller rodar:
+
+**Como chega no Front-end (Nuxt, React, Flutter):**
+```json
+{
+    "status": "error",
+    "message": "Erro de Validação Atributiva",
+    "errors": {
+        "email": ["Esse não parece ser um E-mail válido.", "Este e-mail já está em uso."],
+        "senha": ["Precisamos que a senha tenha no mínimo 8 dígitos, pra sua segurança"]
+    }
+}
+```
+
+### Exemplo de uso
+Dessa forma, o seu fluxo de código no Controller para API, ao injetar o DTO via *Autowiring*, permanecerá absurdamente limpo! O programador de back-end foca apenas na lógica positiva.
+
+```php
+use App\DTOs\Api\CadastroDTO;
+use Core\Http\Response;
+
+class UsuariosController extends Controller
+{
+    #[Post('/api/usuarios')]
+    public function store(Request $request, CadastroDTO $dto) // Injeta a DTO para validar magicamente
+    {
+        // Se a lógica chegou aqui SUCESSO! A requisição superou o JSON Validation Gatekeeper 422!
+        $dadosSeguros = $dto->toArray();
+        
+        // Insira no Banco...
+        // ...
+        
+        // E então você devolve o recurso ou mensagem:
+        return Response::makeJson([
+            'status' => 'sucesso',
+            'data' => $dadosSeguros
+        ], 201);
+    }
+}
+```
