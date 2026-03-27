@@ -1,12 +1,17 @@
 {
     frankenphp
     order mercure after encode
+    order vulcain after mercure
 }
 
 :8000 {
     root * public/
     encode zstd gzip
     
+    # Suporte a Vulcain (Priorização de recursos / Web Push)
+    vulcain
+    
+    # Configuração do Mercure Hub (Broadcasting Real-time)
     mercure {
         publisher_jwt !ChangeThisMercureHubJWTSecretKey!
         subscriber_jwt !ChangeThisMercureHubJWTSecretKey!
@@ -14,6 +19,26 @@
         subscriptions
     }
     
+    # Headers de Segurança
+    header {
+        # Previne que o site seja emoldurado (clickjacking)
+        X-Frame-Options "SAMEORIGIN"
+        # Previne que o navegador tente adivinhar o tipo de conteúdo (MIME sniffing)
+        X-Content-Type-Options "nosniff"
+        # Referrer Policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Permissions Policy
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+
+    # Cache de Arquivos Estáticos (Imagens, CSS, JS)
+    @static {
+        file
+        path *.ico *.css *.js *.gif *.webp *.jpg *.jpeg *.png *.svg *.woff *.woff2
+    }
+    header @static Cache-Control "public, max-age=31536000, must-revalidate"
+
+    # Servidor PHP em modo Worker
     php_server {
         worker public/index.php
     }

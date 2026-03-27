@@ -29,18 +29,27 @@ $app = require_once __DIR__ . '/../bootstrap/app.php';
 
 $kernel = new \Core\Http\Kernel($app->get(\Core\Routing\Router::class));
 
-if (isset($_SERVER['FRANKENPHP_WORKER']) && function_exists('frankenphp_handle_request')) {
-    // Loop de Alta-Performance pelo Docker
-    $handler = static function () use ($kernel) {
+$running = true;
+$nbRequests = 0;
+
+while ($running) {
+    // Escuta e trata requisições no modo Worker do FrankenPHP (Alta Performance)
+    if (isset($_SERVER['FRANKENPHP_WORKER']) && function_exists('frankenphp_handle_request')) {
+        $running = call_user_func('frankenphp_handle_request', function () use ($kernel) {
+            $request = \Core\Http\Request::capture();
+            $response = $kernel->handle($request);
+            $response->send();
+        });
+
+        // Evita memory leaks reciclando o worker após 500 requisições
+        if ($nbRequests++ >= 500) {
+            exit;
+        }
+    } else {
+        // Servidor PHP Comum (PHP-FPM, Apache, ou servido local)
         $request = \Core\Http\Request::capture();
         $response = $kernel->handle($request);
         $response->send();
-    };
-    // Ignora o aviso de erro da IDE chamada de funcão dinamicamente (Extensão C)
-    call_user_func('frankenphp_handle_request', $handler);
-} else {
-    // Servidor normal (Apache, Nginx, ou FPM)
-    $request = \Core\Http\Request::capture();
-    $response = $kernel->handle($request);
-    $response->send();
+        $running = false; // Só processa uma vez e finaliza
+    }
 }
