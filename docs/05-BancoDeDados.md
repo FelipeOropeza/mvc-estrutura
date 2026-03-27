@@ -328,8 +328,8 @@ class User extends Model
     // 'nivel_admin', 'saldo' etc. nunca serão escritos via insert/update
 }
 
-// Mesmo que alguém envie 'nivel_admin' no POST, ele é descartado:
-(new User())->insert(request()->all());
+// Mesmo que alguém envie 'custo_interno' no POST, ele é descartado:
+(new Produto())->insert(request()->all());
 ```
 
 > Se `$fillable` estiver **vazio** e `APP_DEBUG=true`, o framework emite um `E_USER_NOTICE` no log para alertar o desenvolvedor. Em produção, simplesmente nada é escrito.
@@ -341,18 +341,47 @@ class User extends Model
 A propriedade `$hidden` oculta colunas sensíveis em `toArray()`, `jsonSerialize()` e `var_dump()`:
 
 ```php
-class Usuario extends Model
+class Produto extends Model
 {
-    protected array $hidden = ['password', 'token_recuperacao'];
+    protected array $hidden = ['custo_compra', 'margem_revendedor'];
 }
 
-$usuario = (new Usuario())->find(1);
+$produto = (new Produto())->find(1);
 
-// 'password' e 'token_recuperacao' não aparecem:
-$usuario->toArray();
-json_encode($usuario);
-var_dump($usuario); // Também oculta via __debugInfo()
+// 'custo_compra' não aparece:
+$produto->toArray();
+json_encode($produto);
+var_dump($produto); // Também oculta via __debugInfo()
 ```
+
+---
+
+## Campos Calculados (appends)
+
+A propriedade `$appends` permite que você inclua resultados de métodos (lógica customizada) no `toArray()` e JSON automaticamente. Útil para formatar valores, totais ou campos processados:
+
+```php
+class Produto extends Model
+{
+    protected array $appends = ['preco_formatado', 'lucro_estimado'];
+
+    public function precoFormatado()
+    {
+        return 'R$ ' . number_format($this->preco, 2, ',', '.');
+    }
+
+    public function lucroEstimado()
+    {
+        return $this->preco - $this->custo_compra;
+    }
+}
+
+$produto = (new Produto())->find(1);
+// O JSON terá as chaves 'preco_formatado' e 'lucro_estimado'
+echo json_encode($produto); 
+```
+
+> **Broadcast:** Se você usar o atributo `#[Broadcast]`, os campos em `$appends` serão enviados automaticamente para o Mercure.
 
 ---
 

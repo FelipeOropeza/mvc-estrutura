@@ -35,7 +35,9 @@ class RoutingServiceProvider extends ServiceProvider
 
         if (file_exists($cacheFile)) {
             // Carrega rotas cacheadas em memória, evitando Reflection e Scans
-            $router->setRoutes(require $cacheFile);
+            $cache = require $cacheFile;
+            $router->setRoutes($cache['routes'] ?? []);
+            $router->setNamedRoutes($cache['named'] ?? []);
         } else {
             // Carrega o arquivo padrão de rotas web.php se existir
             if (file_exists($basePath . '/routes/web.php')) {

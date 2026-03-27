@@ -14,24 +14,25 @@ class RouteCompiler
     {
         $routes = $router->getRoutes();
         $code = "<?php\n\n// Arquivo gerado automaticamente pelo `php forge optimize`.\n// Nao edite manualmente!\n\nreturn [\n";
+        $code .= "    'routes' => [\n";
 
         foreach ($routes as $method => $patterns) {
-            $code .= "    '$method' => [\n";
+            $code .= "        '$method' => [\n";
             foreach ($patterns as $pattern => $info) {
                 // Escape aspas simples no pattern para não quebrar a construção do array PHP
                 $safePattern = str_replace("'", "\'", $pattern);
-                $code .= "        '$safePattern' => [\n";
+                $code .= "            '$safePattern' => [\n";
 
                 // Middlewares
                 $middlewares = $info['middlewares'] ?? [];
                 $middlewaresCode = "[\n";
                 foreach ($middlewares as $mw) {
                     if (is_string($mw)) {
-                        $middlewaresCode .= "                '{$mw}',\n";
+                        $middlewaresCode .= "                    '{$mw}',\n";
                     }
                 }
-                $middlewaresCode .= "            ]";
-                $code .= "            'middlewares' => $middlewaresCode,\n";
+                $middlewaresCode .= "                ]";
+                $code .= "                'middlewares' => $middlewaresCode,\n";
 
                 // Action e Dependências (Reflection Recursivo no momento do Build!)
                 $action = $info['action'];
@@ -41,23 +42,29 @@ class RouteCompiler
 
                     $factoryCode = $this->buildInstantiationCode($class);
 
-                    $code .= "            'action' => [\n";
-                    $code .= "                'class' => '$class',\n";
-                    $code .= "                'method' => '$methodName',\n";
-                    $code .= "                'factory' => function() {\n";
-                    $code .= "                    return $factoryCode;\n";
-                    $code .= "                }\n";
-                    $code .= "            ]\n";
+                    $code .= "                'action' => [\n";
+                    $code .= "                    'class' => '$class',\n";
+                    $code .= "                    'method' => '$methodName',\n";
+                    $code .= "                    'factory' => function() {\n";
+                    $code .= "                        return $factoryCode;\n";
+                    $code .= "                    }\n";
+                    $code .= "                ]\n";
                 } elseif ($action instanceof Closure) {
-                    $code .= "            'action' => null // Rotas closure nao sofrem cache anonimo.\n";
+                    $code .= "                'action' => null // Rotas closure nao sofrem cache anonimo.\n";
                 } else {
-                    $code .= "            'action' => null\n";
+                    $code .= "                'action' => null\n";
                 }
 
-                $code .= "        ],\n";
+                $code .= "            ],\n";
             }
-            $code .= "    ],\n";
+            $code .= "        ],\n";
         }
+        $code .= "    ],\n";
+
+        // Adiciona as rotas nomeadas no cache
+        $namedRoutes = $router->getNamedRoutes();
+        $code .= "    'named' => " . var_export($namedRoutes, true) . ",\n";
+        
         $code .= "];\n";
 
         return $code;

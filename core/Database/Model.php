@@ -24,6 +24,9 @@ abstract class Model implements \JsonSerializable
     /** @var array Lista de colunas que devem ser ocultadas em debugInfo, JSON e Array */
     protected array $hidden = [];
 
+    /** @var array Lista de métodos ou propriedades calculadas para incluir na serialização (ex: 'melhor_nota') */
+    protected array $appends = [];
+
     /** @var bool Ativa/Desativa controle automático das colunas created_at e updated_at */
     public bool $timestamps = true;
 
@@ -40,6 +43,9 @@ abstract class Model implements \JsonSerializable
             $this->table = pluralize(strtolower($className));
         }
     }
+
+    /** @var array Cache de resultados do atributo #[Broadcast] */
+    protected static array $broadcastCache = [];
 
     /** @var array Guarda os relacionamentos do Eager Loading */
     protected array $loadedRelations = [];
@@ -274,8 +280,14 @@ abstract class Model implements \JsonSerializable
         }
 
         $stmt->execute();
+        $id = (int) $this->db->lastInsertId();
 
-        return (int) $this->db->lastInsertId();
+        if ($id > 0) {
+            $this->{$this->primaryKey} = $id;
+            $this->checkAndBroadcast('inserted');
+        }
+
+        return $id;
     }
 
     /**
@@ -312,7 +324,13 @@ abstract class Model implements \JsonSerializable
             $stmt->bindValue(':' . $key, $val);
         }
 
-        return $stmt->execute();
+        $success = $stmt->execute();
+
+        if ($success) {
+            $this->checkAndBroadcast('updated');
+        }
+
+        return $success;
     }
 
     /**
@@ -335,14 +353,24 @@ abstract class Model implements \JsonSerializable
             $stmt->bindValue(':id', $id);
             $stmt->bindValue(':deleted_at', date('Y-m-d H:i:s'));
             
-            return $stmt->execute();
+            $success = $stmt->execute();
+            if ($success) {
+                $this->checkAndBroadcast('deleted');
+            }
+            
+            return $success;
         }
 
         $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id);
 
-        return $stmt->execute();
+        $success = $stmt->execute();
+        if ($success) {
+            $this->checkAndBroadcast('deleted');
+        }
+
+        return $success;
     }
 
     /**
@@ -478,6 +506,18 @@ abstract class Model implements \JsonSerializable
     public function with(string|array $relations, string ...$extra): QueryBuilder
     {
         return $this->newQuery()->with($relations, ...$extra);
+    }
+
+    /**
+     * Carrega relações para a instância atual do Model (Lazy Loading manual otimizado).
+     *
+     * @param string|array $relations
+     * @return $this
+     */
+    public function load(string|array $relations): self
+    {
+        $this->newQuery()->with($relations)->loadForModels([$this]);
+        return $this;
     }
 
     /**
@@ -639,6 +679,14 @@ abstract class Model implements \JsonSerializable
             }
         }
 
+        // Adiciona campos do $appends chamando os métodos dinamicamente
+        foreach ($this->appends as $method) {
+            if (method_exists($this, $method)) {
+                $result = $this->$method();
+                $data[$method] = ($result instanceof Model) ? $result->toArray() : $result;
+            }
+        }
+
         // Remove campos protegidos (hidden)
         foreach ($this->hidden as $field) {
             unset($data[$field]);
@@ -661,5 +709,54 @@ abstract class Model implements \JsonSerializable
     public function __debugInfo(): array
     {
         return $this->toArray();
+    }
+
+    /**
+     * Verifica se o Model tem o atributo #[Broadcast] e dispara o evento via Mercure.
+     * 
+     * @param string $action 'inserted', 'updated' ou 'deleted'
+     */
+    protected function checkAndBroadcast(string $action): void
+    {
+        $class = static::class;
+
+        // Se já sabemos que não tem, retorna rápido (Performance)
+        if (isset(self::$broadcastCache[$class]) && self::$broadcastCache[$class] === false) {
+            return;
+        }
+
+        if (!isset(self::$broadcastCache[$class])) {
+            $reflection = new \ReflectionClass($class);
+            $attributes = $reflection->getAttributes(\Core\Attributes\Broadcast::class);
+
+            if (empty($attributes)) {
+                self::$broadcastCache[$class] = false;
+                return;
+            }
+
+            self::$broadcastCache[$class] = $attributes[0]->newInstance();
+        }
+
+        /** @var \Core\Attributes\Broadcast $broadcast */
+        $broadcast = self::$broadcastCache[$class];
+
+        // Se o modo estiver setado e não condiz com a ação, para aqui.
+        if ($broadcast->mode === 'create' && $action !== 'inserted') return;
+        if ($broadcast->mode === 'update' && $action !== 'updated') return;
+
+        // Se houver relações para carregar antes do broadcast
+        if (!empty($broadcast->with)) {
+            $this->load($broadcast->with);
+        }
+
+        $topic = $broadcast->topic ?? $this->table;
+
+        broadcast((string) $topic, [
+            'event' => $broadcast->event,
+            'action' => $action,
+            'model' => $class,
+            'id' => $this->{$this->primaryKey} ?? null,
+            'data' => $this->toArray()
+        ]);
     }
 }

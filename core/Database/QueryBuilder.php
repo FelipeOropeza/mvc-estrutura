@@ -101,7 +101,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function where(string|\Closure $column, ?string $operator = null, mixed $value = null): self
+    public function where(string|\Closure $column, mixed $operator = null, mixed $value = null): self
     {
         if ($column instanceof \Closure) {
             $subQuery = new self($this->db, $this->table, $this->class);
@@ -136,7 +136,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function orWhere(string|\Closure $column, ?string $operator = null, mixed $value = null): self
+    public function orWhere(string|\Closure $column, mixed $operator = null, mixed $value = null): self
     {
         if ($column instanceof \Closure) {
             $subQuery = new self($this->db, $this->table, $this->class);
@@ -299,7 +299,7 @@ class QueryBuilder
         $results = $stmt->fetchAll(PDO::FETCH_CLASS, $this->class);
 
         if (!empty($results) && !empty($this->with)) {
-            $results = $this->eagerLoadRelations($results);
+            $results = $this->loadForModels($results);
         }
 
         return $results;
@@ -400,7 +400,13 @@ class QueryBuilder
     }
 
 
-    protected function eagerLoadRelations(array $models): array
+    /**
+     * Efetivamente carrega as relações para um array de modelos existentes.
+     * 
+     * @param array $models
+     * @return array
+     */
+    public function loadForModels(array $models): array
     {
         if (empty($models)) return $models;
         
