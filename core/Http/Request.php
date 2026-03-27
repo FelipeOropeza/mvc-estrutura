@@ -56,6 +56,14 @@ class Request
     }
 
     /**
+     * Verifica se um campo existe na requisição.
+     */
+    public function has(string $key): bool
+    {
+        return isset($this->post[$key]) || isset($this->query[$key]) || isset($this->files[$key]);
+    }
+
+    /**
      * Retorna um dado do corpo da requisição (POST) ou da URL (GET).
      */
     public function get(string $key, mixed $default = null): mixed

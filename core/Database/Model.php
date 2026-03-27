@@ -21,7 +21,7 @@ abstract class Model implements \JsonSerializable
     /** @var array Lista de colunas seguras e permitidas para serem manipuladas em massa */
     protected array $fillable = [];
 
-    /** @var array Lista de colunas que devem ser ocultadas apenas no toArray() e jsonSerialize() (não afeta persistência) */
+    /** @var array Lista de colunas que devem ser ocultadas em debugInfo, JSON e Array */
     protected array $hidden = [];
 
     /** @var bool Ativa/Desativa controle automático das colunas created_at e updated_at */
@@ -124,13 +124,7 @@ abstract class Model implements \JsonSerializable
      */
     public static function __callStatic(string $name, array $arguments): mixed
     {
-        $instance = new static();
-        
-        if (!method_exists($instance, $name)) {
-            throw new \BadMethodCallException("Método '{$name}' não existe na classe " . static::class);
-        }
-
-        return $instance->$name(...$arguments);
+        return (new static())->$name(...$arguments);
     }
 
     /**
@@ -223,7 +217,18 @@ abstract class Model implements \JsonSerializable
         $pk = $this->primaryKey;
         $data = [];
 
-        $data = $this->getRawData();
+        // Coleta todas as propriedades dynamic/public do objeto para o array de dados
+        $raw = (array) $this;
+        foreach ($raw as $key => $value) {
+            $cleanKey = ltrim($key, "\0");
+            $cleanKey = preg_replace('/^[^\0]+\0/', '', $cleanKey) ?: $cleanKey;
+
+            // Pula propriedades do framework
+            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode'], true)) {
+                continue;
+            }
+            $data[$cleanKey] = $value;
+        }
 
         if (isset($this->$pk) && $this->$pk) {
             return $this->update($this->$pk, $data);
@@ -263,7 +268,9 @@ abstract class Model implements \JsonSerializable
         $stmt = $this->db->prepare($sql);
 
         foreach ($data as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
+            // Conversão explícita para evitar que boolean false vire string vazia ''
+            $val = is_bool($value) ? (int) $value : $value;
+            $stmt->bindValue(':' . $key, $val);
         }
 
         $stmt->execute();
@@ -300,7 +307,9 @@ abstract class Model implements \JsonSerializable
 
         $stmt->bindValue(':__pk_id', $id);
         foreach ($data as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
+            // Conversão explícita para evitar que boolean false vire string vazia ''
+            $val = is_bool($value) ? (int) $value : $value;
+            $stmt->bindValue(':' . $key, $val);
         }
 
         return $stmt->execute();
@@ -597,38 +606,27 @@ abstract class Model implements \JsonSerializable
     }
 
     /**
-     * Coleta todas as propriedades dinâmicas e públicas, limpando as chaves.
-     * 
-     * @return array
-     */
-    private function getRawData(): array
-    {
-        $raw = (array) $this;
-        $data = [];
-        $skip = [
-            'db', 'table', 'primaryKey', 'fillable', 'hidden', 
-            'timestamps', 'softDeletes', 'loadedRelations', 
-            'relationDefinitionMode'
-        ];
-
-        foreach ($raw as $key => $value) {
-            $cleanKey = ltrim($key, "\0");
-            $cleanKey = preg_replace('/^[^\0]+\0/', '', $cleanKey) ?: $cleanKey;
-            
-            if (!in_array($cleanKey, $skip, true)) {
-                $data[$cleanKey] = $value;
-            }
-        }
-        
-        return $data;
-    }
-
-    /**
      * Converte o model para array, respeitando os campos ocultos.
      */
     public function toArray(): array
     {
-        $data = $this->getRawData();
+        // Cast captura tanto propriedades declaradas quanto dinâmicas (setadas pelo PDO FETCH_CLASS).
+        // Propriedades private/protected ficam com chaves mangled pelo PHP, por isso filtramos.
+        $raw = (array) $this;
+
+        $data = [];
+        foreach ($raw as $key => $value) {
+            // Descarta chaves mangled de private/protected (ex: "\0ClassName\0prop")
+            $cleanKey = ltrim($key, "\0");
+            $cleanKey = preg_replace('/^[^\0]+\0/', '', $cleanKey) ?: $cleanKey;
+
+            // Remove propriedades internas do framework
+            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode'], true)) {
+                continue;
+            }
+
+            $data[$cleanKey] = $value;
+        }
 
         // Adiciona as relações carregadas
         foreach ($this->loadedRelations as $key => $value) {

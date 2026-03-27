@@ -82,7 +82,11 @@ class ColumnDefinition
         }
 
         if ($this->defaultValue !== null) {
-            if (is_string($this->defaultValue)) {
+            if (is_bool($this->defaultValue)) {
+                $val = $this->defaultValue ? 1 : 0;
+                $sql .= " DEFAULT {$val}";
+            }
+            elseif (is_string($this->defaultValue)) {
                 $sql .= " DEFAULT '{$this->defaultValue}'";
             }
             else {

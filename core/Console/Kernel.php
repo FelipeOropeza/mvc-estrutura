@@ -53,7 +53,6 @@ class Kernel
             case 'make:mutator':
                 $this->makeMutator($args);
                 break;
-
             case 'setup:auth':
                 $this->setupAuth($args);
                 break;
@@ -159,7 +158,6 @@ class Kernel
         echo "  db:seed [Nome]           Popula o banco com seeders\n\n";
 
         echo "🛠️ Instalação & Setup:\n";
-
         echo "  setup:auth               Gera sistema de Autenticação Web (Session)\n";
         echo "  setup:api                Gera sistema de Autenticação API (JWT)\n";
         echo "  setup:aviso              Gera sistema de Avisos em Tempo Real (Redis/Mercure)\n\n";
@@ -190,7 +188,7 @@ class Kernel
                 break;
             case 'make:component':
                 echo "Comando: make:component <Nome>\n";
-                echo "Descrição: Cria um componente HTMX reativo para views PHP ou Twig.\n";
+                echo "Descrição: Cria um componente HTMX reativo para views nativas em PHP.\n";
                 echo "Exemplo: php forge make:component lista_produtos\n";
                 break;
             case 'setup:api':
@@ -507,11 +505,9 @@ class Kernel
 
         $name = $args[1];
 
-        $extension = '.php';
-
-        // Anexa a extensão baseada no motor dinamicamente ao nome se não tem
-        if (!str_ends_with($name, $extension) && !str_ends_with($name, '.html')) {
-            $name .= $extension;
+        // Anexa a extensão .php ao nome se não tem
+        if (!str_ends_with($name, '.php') && !str_ends_with($name, '.html')) {
+            $name .= '.php';
         }
 
         $path = $this->config['paths']['views'] . '/' . $name;
@@ -622,7 +618,7 @@ class Kernel
         file_put_contents($cacheFile, $compiledCode);
 
         echo "✅ Compilação de rotas concluída com sucesso em .cache/routes.php\n";
-        echo "✅ Rotas compiladas delegando injeção para o Container de Runtime.\n";
+        echo "✅ Dependências resolvidas \033[32msem Reflection\033[0m.\n";
     }
 
     private function clearOptimization(array $args): void
@@ -847,32 +843,47 @@ class Kernel
                     foreach ($ranMigrations as $row) {
                         $file = $row['migration'];
                         $path = $dir . '/' . $file;
+                        $id = $row['id'];
+                        
                         if (file_exists($path)) {
+                            // Extrai o nome da classe do arquivo
                             $className = preg_replace('/^[0-9_]+_([a-zA-Z0-9]+)\.php$/', '$1', $file);
-                            require_once $path;
+                            
+                            try {
+                                require_once $path;
 
-                            $namespacedClass = "\\App\\Database\\Migrations\\$className";
-                            if (class_exists($namespacedClass)) {
-                                $className = $namespacedClass;
-                            }
-
-                            if (class_exists($className)) {
-                                $migration = new $className();
-                                if (method_exists($migration, 'down')) {
-                                    echo "[INFO] Rollback: $file\n";
-                                    $migration->down();
+                                $namespacedClass = "\\App\\Database\\Migrations\\$className";
+                                if (class_exists($namespacedClass)) {
+                                    $className = $namespacedClass;
                                 }
+
+                                if (class_exists($className)) {
+                                    $migration = new $className();
+                                    if (method_exists($migration, 'down')) {
+                                        echo "[INFO] Rollback: $file\n";
+                                        $migration->down();
+                                    }
+                                }
+                                
+                                // Remove o registro individual da migration após sucesso no rollback
+                                $pdoApp->exec("DELETE FROM migrations WHERE id = $id");
+
+                            } catch (\PDOException $e) {
+                                echo " ! Erro ao processar rollback de $file: " . $e->getMessage() . "\n";
+                                // Aqui você pode decidir se quer parar ou continuar. 
+                                // Geralmente continuamos tentando os outros.
+                            } catch (\Exception $e) {
+                                echo " ! Falha inesperada em $file: " . $e->getMessage() . "\n";
                             }
                         }
                     }
 
-                    $pdoApp->exec("TRUNCATE TABLE migrations");
-                    echo "\n✅ Rollback completado.\n\n";
+                    echo "\n✅ Operação de Rollback finalizada.\n\n";
                 } else {
                     echo "Nenhuma migration rodada detectada para rollback.\n\n";
                 }
             } catch (\PDOException $e) {
-                echo "A tabela 'migrations' não existe ou não foi criada ainda.\n\n";
+                echo "Erro ao acessar a tabela de migrations: " . $e->getMessage() . "\n\n";
             }
         }
 
@@ -997,8 +1008,7 @@ class Kernel
         $name = $args[1];
 
         // Certifica compatibilidade de views PHP
-        $engine = $this->config['app']['view_engine'] ?? 'php';
-        $extension = $engine === 'twig' ? '.twig' : '.php';
+        $extension = '.php';
 
         $fileName = str_ends_with($name, $extension) ? $name : $name . $extension;
         $classNameRaw = str_replace($extension, '', $fileName);

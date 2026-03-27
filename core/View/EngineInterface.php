@@ -9,7 +9,7 @@ interface EngineInterface
     /**
      * Renderiza o template com os dados fornecidos.
      *
-     * @param string $view Nome da view (ex: 'home' ou 'home.html.twig')
+     * @param string $view Nome da view (ex: 'home' ou 'home.php')
      * @param array $data Variaveis que a view recebe
      * @return string  (Retorna o HTML)
      */

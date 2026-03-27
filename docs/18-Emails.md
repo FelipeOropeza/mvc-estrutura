@@ -38,7 +38,7 @@ mailer()
 - `send()`: Dispara o envio e retorna `bool`.
 
 ## 💡 Dica: Templates Reais
-Você pode combinar o envio de e-mail com o motor de templates (Twig ou PHP) para criar e-mails dinâmicos:
+Você pode combinar o envio de e-mail com o motor de templates PHP para criar e-mails dinâmicos:
 
 ```php
 $html = view('emails.boas_vindas', ['user' => $user])->getContent();

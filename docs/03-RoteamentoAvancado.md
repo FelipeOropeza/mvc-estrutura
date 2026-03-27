@@ -20,7 +20,7 @@ Você pode capturar informações na URL e batizar sua rota para facilitar a cri
 ```php
 Route::get('/produto/{id}', [ProdutoController::class, 'show'])->name('produto.detalhe');
 
-// Na sua view (se usar a Engine nativa Twig/PHP compatível com o Helper):
+// Na sua view (se usar a Engine nativa PHP compatível com o Helper):
 // <a href="<?= route('produto.detalhe', ['id' => 5]) ?>"> Detalhes </a>
 ```
 

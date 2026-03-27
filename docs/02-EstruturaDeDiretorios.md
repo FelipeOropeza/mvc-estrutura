@@ -8,7 +8,7 @@ O framework adota o conceito de "Progressive Disclosure". Pastas de arquitetura 
   - **`Middleware/`**: "Filtros" (Ex: Bloquear usuários deslogados).
   - *Pastas como `DTOs/`, `Mutators/`, `Providers/`, `Jobs/`, `Services/` serão criadas dinamicamente à medida que você for implementando funcionalidades avançadas via `php forge`.*
 - **`resources/`**: Arquivos que não são classes de negócio.
-  - **`views/`**: O visual do seu site em HTML, PHP ou Twig.
+  - **`views/`**: O visual do seu site em HTML ou PHP nativo.
 - **`bootstrap/`**: Scripts de inicialização do motor do framework.
 - **`config/`**: Configurações de super variáveis (`app.php`, `database.php` etc).
 - **`core/`**: O motor do framework (Não mexa aqui dentro, é seu código de base).

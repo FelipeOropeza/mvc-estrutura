@@ -139,14 +139,15 @@ $produtos = (new Produto())
 | `leftJoin($table, $cond)` | LEFT JOIN |
 | `groupBy(string $col)` | GROUP BY |
 | `having(string $cond)` | HAVING |
-| `orderBy(string $col, $dir)` | ORDER BY (padrão ASC) |
+| `orderBy(string $col, $dir)` | ORDER BY (acumulativo se chamado múltiplas vezes) |
 | `limit(int $n)` | LIMIT |
 | `offset(int $n)` | OFFSET |
-| `with($rels)` | Eager Loading (aceita array associativo com Closure para filtros) |
+| `with($rels)` | Eager Loading (aceita array associativo com Closure e dot notation) |
 | `withTrashed()` | Inclui soft-deletados |
 | `onlyTrashed()` | Somente soft-deletados |
 | `get()` | Executa e retorna `array` |
 | `first()` | Executa com LIMIT 1, retorna objeto ou `null` |
+| `find(mixed $id)` | Busca o registro pelo ID (`where('id', '=', $id)->first()`) |
 | `count(string $col)` | Retorna `COUNT(col)` como `int` |
 | `paginate(int $perPage, ?int $page)` | Retorna dados + metadados de paginação |
 | `delete()` | Executa DELETE com os WHEREs aplicados |
@@ -287,6 +288,7 @@ $model = new Produto();
 $id = $model->insert([
     'nome'        => 'Arroz',
     'preco'       => 8.99,
+    'ativo'       => true, // Booleanos são convertidos automaticamente para 1/0 no SQL
     'categoria_id' => 2,
 ]);
 
@@ -496,6 +498,18 @@ $usuarios = (new Usuario())->with([
 ])->get();
 ```
 
+### Eager Loading Aninhado (Nested Relations)
+
+É possível carregar relações de relações de forma otimizada utilizando a notação de ponto (dot notation):
+
+```php
+$usuarios = (new Usuario())->with('pedidos.itens.produto')->get();
+// Carregará os usuários
+// + os pedidos
+// + os itens de cada pedido
+// + o produto de cada item, blindando N+1 em todos os níveis.
+```
+
 ---
 
 ## Transações
@@ -533,7 +547,7 @@ $pedidoId = Connection::transaction(function(\PDO $db) use ($pedidoData) {
 
 ## Serialização: toArray() e JSON
 
-Toda Model implementa `\JsonSerializable`, então você pode usar `json_encode()` diretamente. Os campos `$hidden` são respeitados em todos os contextos:
+Toda Model implementa `\JsonSerializable`, então você pode usar `json_encode()` diretamente. O método `toArray()` foi projetado para extrair mapeamentos limpos até mesmo de propriedades dinâmicas ou privadas/protegidas, excluindo o estado acoplado pelo framework. Os campos definidos na propriedade `$hidden` são totalmente blindados:
 
 ```php
 $produto = (new Produto())->find(1);
@@ -637,6 +651,7 @@ Schema::create('produtos', function(\Core\Database\Schema\Blueprint $table) {
 ```php
 $table->string('apelido')->nullable();          // NULL permitido
 $table->integer('views')->default(0);           // Valor padrão
+$table->boolean('ativo')->default(true);        // Boolean auto-traduz para DEFAULT 1 nativamente
 $table->string('codigo')->unique();             // UNIQUE KEY
 $table->integer('quantidade')->unsigned();      // UNSIGNED
 $table->id('produto_id')->autoIncrement();      // AUTO_INCREMENT (incluído em id())

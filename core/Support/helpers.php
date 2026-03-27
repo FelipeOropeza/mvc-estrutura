@@ -444,3 +444,14 @@ if (!function_exists('mercure_listen')) {
 HTML;
     }
 }
+
+if (!function_exists('dispatch')) {
+    /**
+     * Atalho global para despachar uma tarefa (Job) para a fila em background.
+     * Ex: dispatch(new NotificarInscricaoJob($user, $comp));
+     */
+    function dispatch(object $job, string $queue = 'default'): bool
+    {
+        return \Core\Queue\QueueManager::push($job, $queue);
+    }
+}
