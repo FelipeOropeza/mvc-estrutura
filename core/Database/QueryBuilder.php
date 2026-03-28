@@ -401,7 +401,8 @@ class QueryBuilder
 
 
     /**
-     * Efetivamente carrega as relações para um array de modelos existentes.
+     * @internal Efetivamente carrega as relações para um array de modelos existentes.
+     * Utilizado internamente pelo Model::load() e Eager Loading do QueryBuilder.
      * 
      * @param array $models
      * @return array

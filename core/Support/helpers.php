@@ -386,6 +386,11 @@ if (!function_exists('broadcast')) {
      */
     function broadcast(string $topic, array $data): string
     {
+        // Se o Hub não estiver registrado no container (ex: contexto CLI sem MercureServiceProvider), aborta silenciosamente
+        if (!app()->has(\Symfony\Component\Mercure\HubInterface::class)) {
+            return '';
+        }
+
         try {
             $hub = app(\Symfony\Component\Mercure\HubInterface::class);
             $update = new \Symfony\Component\Mercure\Update(

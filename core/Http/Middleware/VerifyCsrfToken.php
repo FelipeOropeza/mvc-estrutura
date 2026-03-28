@@ -19,8 +19,8 @@ class VerifyCsrfToken
 
     public function handle(Request $request, Closure $next): Response
     {
-        // Métodos de leitura estão imunes
-        if (in_array($request->server['REQUEST_METHOD'] ?? 'GET', ['HEAD', 'GET', 'OPTIONS'])) {
+        // Métodos de leitura e requisições de API estão imunes
+        if (in_array($request->server['REQUEST_METHOD'] ?? 'GET', ['HEAD', 'GET', 'OPTIONS']) || $request->isApi()) {
             return $next($request);
         }
 

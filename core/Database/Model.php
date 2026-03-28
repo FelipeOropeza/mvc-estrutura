@@ -44,7 +44,12 @@ abstract class Model implements \JsonSerializable
         }
     }
 
-    /** @var array Cache de resultados do atributo #[Broadcast] */
+    /** 
+     * @var array Cache de resultados do atributo #[Broadcast].
+     * Estático e compartilhado entre todas as subclasses para máxima performance.
+     * Em modo Worker, este cache persiste entre requisições. Se houver mudanças nos attributes em runtime (edge case),
+     * a reciclagem do worker ou restart resolvem a invalidação.
+     */
     protected static array $broadcastCache = [];
 
     /** @var array Guarda os relacionamentos do Eager Loading */

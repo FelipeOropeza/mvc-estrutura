@@ -630,6 +630,7 @@ class Kernel
         if (file_exists($cacheFile)) {
             unlink($cacheFile);
             echo "✅ Cache de rotas removido com sucesso.\n";
+            echo "⚠️  Nota: Se estiver rodando em Worker Mode (FrankenPHP/Swoole), reinicie o worker para aplicar as mudanças.\n";
         } else {
             echo "ℹ️ Nenhum cache encontrado para remover.\n";
         }
