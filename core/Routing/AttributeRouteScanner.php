@@ -36,7 +36,7 @@ class AttributeRouteScanner
 
         foreach ($regex as $file) {
             $filePath = $file[0];
-            $relativePath = str_replace([$directory, '.php', '/'], ['', '', '\\'], $filePath);
+            $relativePath = str_replace([$directory, '.php', DIRECTORY_SEPARATOR, '/'], ['', '', '\\', '\\'], $filePath);
             $className = $baseNamespace . ltrim($relativePath, '\\');
 
             if (!class_exists($className)) {

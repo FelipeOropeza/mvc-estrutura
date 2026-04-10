@@ -235,7 +235,7 @@ abstract class Model implements \JsonSerializable
             $cleanKey = preg_replace('/^[^\0]+\0/', '', $cleanKey) ?: $cleanKey;
 
             // Pula propriedades do framework
-            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode'], true)) {
+            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'appends', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode', 'broadcastCache'], true)) {
                 continue;
             }
             $data[$cleanKey] = $value;
@@ -666,7 +666,7 @@ abstract class Model implements \JsonSerializable
             $cleanKey = preg_replace('/^[^\0]+\0/', '', $cleanKey) ?: $cleanKey;
 
             // Remove propriedades internas do framework
-            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode'], true)) {
+            if (in_array($cleanKey, ['db', 'table', 'primaryKey', 'fillable', 'hidden', 'appends', 'timestamps', 'softDeletes', 'loadedRelations', 'relationDefinitionMode', 'broadcastCache'], true)) {
                 continue;
             }
 

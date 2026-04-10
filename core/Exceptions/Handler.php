@@ -213,7 +213,7 @@ class Handler
                     <div class="error-box">
                         <div class="message">' . htmlspecialchars($exception->getMessage()) . '</div>
                         <div class="location">
-                            <strong>Local:</strong> ' . $exception->getFile() . ' <strong>na linha</strong> ' . $exception->getLine() . '
+                            <strong>Local:</strong> ' . htmlspecialchars($exception->getFile(), ENT_QUOTES, 'UTF-8') . ' <strong>na linha</strong> ' . (int) $exception->getLine() . '
                         </div>
                     </div>
 

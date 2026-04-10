@@ -1,6 +1,6 @@
 # Documentação Oficial: MVC Base Framework
 
-Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, arquitetado em conceitos modernos (Stateless, PSR-11 e PSR-15 concept) preparado para o FrankenPHP. Aqui você aprenderá a dominar cada engrenagem para construir desde blogs até e-commerces e sistemas complexos.
+Bem-vindo ao manual completo do **MVC Base**, um micro-framework PHP puro arquitetado com conceitos modernos (Stateless, PSR-11 e PSR-15) preparado para o FrankenPHP. Aqui você aprenderá a dominar cada engrenagem para construir desde blogs até e-commerces e sistemas complexos.
 
 ---
 
@@ -9,7 +9,7 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 ### 🔰 Essencial (Para começar)
 * [Estrutura de Diretórios](02-EstruturaDeDiretorios.md)
 * [Roteamento Avançado & Atributos PHP 8](03-RoteamentoAvancado.md)
-* [Controllers e Regras de Négocio (Services)](04-ControllersEServices.md)
+* [Controllers e Regras de Negócio (Services)](04-ControllersEServices.md)
 * [Views e Interface de Usuário (UI)](10-ViewsEUI.md)
 * [Banco de Dados (ORM Moderno)](05-BancoDeDados.md)
 * [Tutorial Prático: Criando meu primeiro CRUD](22-TutorialCRUD.md)
@@ -19,7 +19,7 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 * [Validações e Data Transfer Objects (DTOs)](06-ValidacoesEDtos.md)
 * [Mutations (Mutadores de Dados)](07-Mutations.md)
 * [Middlewares e Segurança](08-MiddlewaresESeguranca.md)
-* [Tratamento de Exceções e Debug Bar](15-ExcecoesEDebug.md)
+* [Tratamento de Exceções e Debug](15-ExcecoesEDebug.md)
 * [Upload de Arquivos](09-UploadDeArquivos.md)
 * [Helpers Globais](13-HelpersGlobais.md)
 
@@ -33,6 +33,7 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 * [Filas e Jobs Assíncronos](19-Filas-E-Jobs.md)
 * [Sistema de Cache (File/Redis)](20-Cache.md)
 * [Eventos em Tempo Real (Mercure)](21-MercureRealTime.md)
+* [Model Auto-Broadcasting (Banco → Browser)](23-BroadcastingRealTime.md)
 
 ---
 
@@ -41,3 +42,42 @@ Bem-vindo ao manual completo do **MVC Base**, um micro-framework ultra-rápido, 
 Entender o caminho que a informação faz desde que o usuário aperta "Enter" até a tela aparecer é o segredo dos desenvolvedores Sêniors. Como este framework é baseado em padrões modernos (PSR-15), o fluxo usa uma arquitetura de "Cebola" (Onion Architecture).
 
 > ![Ciclo de Vida da Requisição (Lifecycle)](assets/lifecycle.png)
+
+### Fluxo simplificado:
+
+```
+HTTP Request
+    │
+    ▼
+public/index.php          ← Entry point; carrega o bootstrap
+    │
+    ▼
+bootstrap/app.php         ← Cria o Container, registra Service Providers
+    │
+    ▼
+Core\Http\Kernel          ← Recebe a Request encapsulada
+    │
+    ▼
+Pipeline (Global)         ← Executa middlewares globais (ex: StartSession)
+    │
+    ▼
+Router::dispatch()        ← Encontra a rota via regex/attr
+    │
+    ▼
+Pipeline (Rota)           ← Executa middlewares específicos da rota (ex: VerifyCsrfToken)
+    │
+    ▼
+Controller::action()      ← Lógica da aplicação + Model + View
+    │
+    ▼
+Core\Http\Response        ← Objeto de resposta com status, headers e conteúdo
+    │
+    ▼
+Response::send()          ← Emite os headers HTTP e o body ao navegador
+```
+
+### Por que isso importa?
+
+- **Cada middleware** pode inspecionar ou modificar a Request antes do Controller e a Response depois
+- **O Container** injeta dependências automaticamente em Controllers via Reflection
+- **A Response** é sempre um objeto — nunca um `echo` direto ou `exit()` — permitindo Worker Mode (FrankenPHP)
