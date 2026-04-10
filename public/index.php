@@ -29,27 +29,30 @@ $app = require_once __DIR__ . '/../bootstrap/app.php';
 
 $kernel = new \Core\Http\Kernel($app->get(\Core\Routing\Router::class));
 
-$running = true;
-$nbRequests = 0;
+$handler = function () use ($kernel) {
+    $request = \Core\Http\Request::capture();
+    $response = $kernel->handle($request);
+    $response->send();
+};
 
-while ($running) {
-    // Escuta e trata requisições no modo Worker do FrankenPHP (Alta Performance)
-    if (isset($_SERVER['FRANKENPHP_WORKER']) && function_exists('frankenphp_handle_request')) {
-        $running = call_user_func('frankenphp_handle_request', function () use ($kernel) {
-            $request = \Core\Http\Request::capture();
-            $response = $kernel->handle($request);
-            $response->send();
-        });
+if (isset($_SERVER['FRANKENPHP_WORKER']) && function_exists('frankenphp_handle_request')) {
+    // Modo Worker do FrankenPHP (Alta Performance)
+    $maxRequests = (int)($_SERVER['MAX_REQUESTS'] ?? 500);
+    $running = true;
+    $nbRequests = 0;
 
-        // Evita memory leaks reciclando o worker após 500 requisições
-        if ($nbRequests++ >= 500) {
-            exit;
+    while ($running) {
+        $running = call_user_func('frankenphp_handle_request', $handler);
+
+        // Limpa o lixo de memória para evitar leaks durante execuções prolongadas
+        gc_collect_cycles();
+
+        // Recicla o worker após o número máximo de requisições
+        if ($maxRequests && ++$nbRequests >= $maxRequests) {
+            $running = false;
         }
-    } else {
-        // Servidor PHP Comum (PHP-FPM, Apache, ou servido local)
-        $request = \Core\Http\Request::capture();
-        $response = $kernel->handle($request);
-        $response->send();
-        $running = false; // Só processa uma vez e finaliza
     }
+} else {
+    // Servidor PHP Comum (PHP-FPM, Apache, CLI Server)
+    $handler();
 }

@@ -9,16 +9,26 @@ Na raiz do seu projeto, temos um `Dockerfile` e um `docker-compose.yml`. Eles in
 O modo Worker mantém sua aplicação carregada na memória RAM, eliminando o custo de boot do PHP em cada requisição. No `public/index.php`, implementamos um loop de processamento com reciclagem automática:
 
 ```php
-while ($running) {
-    if (isset($_SERVER['FRANKENPHP_WORKER'])) {
-        $running = \frankenphp_handle_request(function () use ($kernel) {
-            $kernel->handle(Request::capture())->send();
-        });
-        if ($nbRequests++ >= 500) exit; // Recicla para evitar leaks
-    } else {
-        $kernel->handle(Request::capture())->send();
-        $running = false;
+$handler = function () use ($kernel) {
+    $kernel->handle(\Core\Http\Request::capture())->send();
+};
+
+if (isset($_SERVER['FRANKENPHP_WORKER']) && function_exists('frankenphp_handle_request')) {
+    $maxRequests = (int)($_SERVER['MAX_REQUESTS'] ?? 500);
+    $running = true;
+    $nbRequests = 0;
+
+    while ($running) {
+        $running = call_user_func('frankenphp_handle_request', $handler);
+        
+        gc_collect_cycles(); // Recycle memory smoothly
+        
+        if ($maxRequests && ++$nbRequests >= $maxRequests) {
+            $running = false; // Recycle worker avoiding memory leaks
+        }
     }
+} else {
+    $handler();
 }
 ```
 

@@ -1,5 +1,7 @@
 {
-    frankenphp
+    frankenphp {
+        worker public/index.php
+    }
     order mercure after encode
     order vulcain after mercure
 }
@@ -38,8 +40,6 @@
     }
     header @static Cache-Control "public, max-age=31536000, must-revalidate"
 
-    # Servidor PHP em modo Worker
-    php_server {
-        worker public/index.php
-    }
+    # Servidor PHP Configurado para acessar o roteador (Worker Mode é gerenciado globalmente)
+    php_server
 }
